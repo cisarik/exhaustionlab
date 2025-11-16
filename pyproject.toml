@@ -1,0 +1,78 @@
+[tool.poetry]
+name = "exhaustionlab"
+version = "0.1.0"
+description = "Cross-platform GUI candlesticks + Binance WS + PyneCore backtesting scaffold"
+authors = ["Michal <you@example.com>"]
+readme = "README.md"
+license = "MIT"
+packages = [{ include = "exhaustionlab" }]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.14"
+PySide6 = ">=6.8.0"
+pyqtgraph = "^0.13.7"
+qasync = "^0.27.1"
+websockets = "^12.0"
+pandas = "^2.2.2"
+numpy = "^2.0.0"
+python-dotenv = "^1.0.1"
+requests = "^2.32.3"
+pynesys-pynecore = {version = "^6.3.4", optional = true}  # CLI optional
+beautifulsoup4 = "^4.14.2"
+feedparser = "^6.0.12"
+lxml = "^6.0.2"
+requests-cache = "^1.2.1"
+praw = "^7.8.1"
+sqlalchemy = "^2.0.44"
+pytest-bdd = "^8.1.0"
+fastapi = "^0.115.5"
+uvicorn = "^0.32.0"
+jinja2 = "^3.1.4"
+matplotlib = "^3.8.0"
+pillow = "^10.0.0"
+cryptography = "^42.0.0"
+scipy = "^1.11.0"
+
+[tool.poetry.extras]
+pynecore = ["pynesys-pynecore"]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2.0"
+black = "^24.8.0"
+ruff = "^0.6.0"
+httpx = "^0.27.0"
+
+[tool.poetry.scripts]
+exhaustionlab-webui = "exhaustionlab.webui.server:main"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["exhaustionlab", "tests"]
+exclude = [
+  ".venv",
+  "venv",
+  ".cache",
+  "build",
+  "dist",
+  "node_modules",
+  "llm_debug_logs",
+  "evolved_strategies",
+  "data",
+  "scripts/pyne",
+  # root-level demo/integration scripts
+  "test_*.py",
+  "migrate_knowledge_base.py",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["E402", "F401", "F841", "F541", "E741", "E722", "E712"]
+"tests/bdd/**" = ["E402", "F541", "E722"]
+"exhaustionlab/app/llm/llm_client.py" = ["F821"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

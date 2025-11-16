@@ -1,0 +1,14 @@
+{
+  "timestamp": "20251116_105821",
+  "model": "google/gemma-3n-e4b",
+  "temperature": 0.7,
+  "request_time_seconds": 4.44195556640625,
+  "response_length": 845,
+  "code_blocks_found": 1,
+  "usage": {
+    "prompt_tokens": 494,
+    "completion_tokens": 289,
+    "total_tokens": 783
+  },
+  "output_directory": "llm_debug_logs/session_20251116_105821"
+}

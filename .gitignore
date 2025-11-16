@@ -1,0 +1,88 @@
+# --- Python / Poetry ---
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+.venv*/
+
+# Byte-compiled / C extensions
+*.so
+
+# Build / packaging
+build/
+dist/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+sdist/
+wheels/
+share/python-wheels/
+*.egg-info/
+*.egg
+MANIFEST
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage
+.tox/
+.nox/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.benchmarks/
+.coverage
+.coverage.*
+coverage.*
+htmlcov/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Project caches / artifacts
+.cache/
+reports/
+deployment_readiness_report.json
+llm_test_outputs/
+
+# Data artifacts (keep tracked samples; ignore new large dumps)
+data/**/*.csv
+data/**/*.json
+data/**/*.parquet
+data/**/*.ohlcv
+
+# Generated strategy/code artifacts
+evolved_strategies/
+
+# Logs
+logs/
+*.log
+
+# Node / front-end (if any local experiments)
+node_modules/
+package-lock.json
+
+# Images produced during testing (keep existing tracked PNGs)
+tmp/
+*.tmp
+
+# Mac/Linux miscellany
+.Trash-*/
+.fuse_hidden* 
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Icon?
+

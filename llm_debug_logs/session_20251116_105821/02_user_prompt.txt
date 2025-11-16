@@ -1,0 +1,11 @@
+Create a simple momentum trading strategy using RSI and SMA.
+
+Requirements:
+- Use RSI(14) for momentum
+- Use SMA(20) for trend
+- Buy when: RSI < 30 AND price > SMA (oversold in uptrend)
+- Sell when: RSI > 70 AND price < SMA (overbought in downtrend)
+- Timeframe: 5 minutes
+- Risk: Balanced
+
+Generate complete, working PyneCore code. Use ```python``` code blocks.

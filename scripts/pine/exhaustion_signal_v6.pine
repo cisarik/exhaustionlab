@@ -1,0 +1,128 @@
+//@version=6
+indicator(title = 'Exhaustion Signal', shorttitle = 'ES', overlay = true)
+// (original Pine source from the user, included for reference)
+
+// ———————————————— INPUT SETTINGS ————————————————
+g1 = "Signal Visibility"
+showLevel1 = input.bool(true, 'Show Level 1 Signals', group = g1, inline = "L1")
+showLevel2 = input.bool(true, 'Show Level 2 Signals', group = g1, inline = "L2")
+showLevel3 = input.bool(true, 'Show Level 3 Signals', group = g1, inline = "L3")
+
+// Alert Triggers
+g2 = "Alert Triggers"
+alertBullishL1 = input.bool(true, "Bullish L1", group = g2, inline = "L1 Alert")
+alertBearishL1 = input.bool(true, "Bearish L1", group = g2, inline = "L1 Alert")
+alertBullishL2 = input.bool(true, "Bullish L2", group = g2, inline = "L2 Alert")
+alertBearishL2 = input.bool(true, "Bearish L2", group = g2, inline = "L2 Alert")
+alertBullishL3 = input.bool(true, "Bullish L3", group = g2, inline = "L3 Alert")
+alertBearishL3 = input.bool(true, "Bearish L3", group = g2, inline = "L3 Alert")
+
+// Thresholds
+level1 = 9
+level2 = 12
+level3 = 14
+
+var int cycle = 0
+var int bullishSignals = 0
+var int bearishSignals = 0
+
+f_resetAndRecheck(_close, _close4) =>
+    newBullish = 0
+    newBearish = 0
+    newCycle = 0
+    if _close < _close4
+        newBullish := 1
+        newCycle := newBullish
+    else if _close > _close4
+        newBearish := 1
+        newCycle := newBearish
+    [newBullish, newBearish, newCycle]
+
+currentBullish = bullishSignals
+currentBearish = bearishSignals
+currentCycle = cycle
+
+if currentCycle < level1
+    if close < close[4]
+        bullishSignals := currentBullish + 1
+        bearishSignals := 0
+        cycle := bullishSignals
+    else if close > close[4]
+        bearishSignals := currentBearish + 1
+        bullishSignals := 0
+        cycle := bearishSignals
+    else
+        [rb, rs, rc] = f_resetAndRecheck(close, close[4])
+        bullishSignals := rb
+        bearishSignals := rs
+        cycle := rc
+else
+    if currentBullish > 0
+        if currentBullish < level2
+            if close < close[3]
+                bullishSignals := currentBullish + 1
+                cycle := bullishSignals
+            else
+                [rb, rs, rc] = f_resetAndRecheck(close, close[4])
+                bullishSignals := rb
+                bearishSignals := rs
+                cycle := rc
+        else if currentBullish < level3 - 1
+            if close < close[2]
+                bullishSignals := currentBullish + 1
+                cycle := bullishSignals
+            else
+                [rb, rs, rc] = f_resetAndRecheck(close, close[4])
+                bullishSignals := rb
+                bearishSignals := rs
+                cycle := rc
+        else if currentBullish == level3 - 1
+            if close < close[2]
+                bullishSignals := level3
+                cycle := bullishSignals
+            else
+                [rb, rs, rc] = f_resetAndRecheck(close, close[4])
+                bullishSignals := rb
+                bearishSignals := rs
+                cycle := rc
+    else if currentBearish > 0
+        if currentBearish < level2
+            if close > close[3]
+                bearishSignals := currentBearish + 1
+                cycle := bearishSignals
+            else
+                [rb, rs, rc] = f_resetAndRecheck(close, close[4])
+                bearishSignals := rs
+                bullishSignals := rb
+                cycle := rc
+        else if currentBearish < level3 - 1
+            if close > close[2]
+                bearishSignals := currentBearish + 1
+                cycle := bearishSignals
+            else
+                [rb, rs, rc] = f_resetAndRecheck(close, close[4])
+                bearishSignals := rs
+                bullishSignals := rb
+                cycle := rc
+        else if currentBearish == level3 - 1
+            if close > close[2]
+                bearishSignals := level3
+                cycle := bearishSignals
+            else
+                [rb, rs, rc] = f_resetAndRecheck(close, close[4])
+                bearishSignals := rs
+                bullishSignals := rb
+                cycle := rc
+    else
+        [rb, rs, rc] = f_resetAndRecheck(close, close[4])
+        bullishSignals := rb
+        bearishSignals := rs
+        cycle := rc
+
+plotshape(showLevel1 and bullishSignals == level1, style=shape.diamond, color=color.new(#30ff85, 0), textcolor=color.white, size=size.tiny, location=location.belowbar)
+plotshape(showLevel2 and bullishSignals == level2, style=shape.xcross, color=color.new(#30ff85, 0), textcolor=color.white, size=size.tiny, location=location.belowbar)
+plotshape(showLevel3 and bullishSignals == level3, style=shape.flag,   color=color.new(#30ff85, 0), textcolor=color.white, size=size.tiny, location=location.belowbar)
+
+plotshape(showLevel1 and bearishSignals == level1, style=shape.diamond, color=color.new(#ff1200, 0), textcolor=color.white, size=size.tiny, location=location.abovebar)
+plotshape(showLevel2 and bearishSignals == level2, style=shape.xcross, color=color.new(#ff1200, 0), textcolor=color.white, size=size.tiny, location=location.abovebar)
+plotshape(showLevel3 and bearishSignals == level3, style=shape.flag,   color=color.new(#ff1200, 0), textcolor=color.white, size=size.tiny, location=location.abovebar)

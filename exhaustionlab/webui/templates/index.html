@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ExhaustionLab Control Room</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <main class="page">
+        <header class="hero">
+            <div class="hero-text">
+                <p class="eyebrow">Production evolution cockpit</p>
+                <h1>LLM evolution, debugging, and simulations — one lightweight UI.</h1>
+                <p class="sub">Inspect live LLM conversations, launch simulations, and track adaptive evolution momentum without leaving your browser.</p>
+                <div class="hero-actions">
+                    <button class="primary" id="scroll-to-evolution">🧬 Start Evolution</button>
+                    <button class="primary ghost" id="refresh-dashboard">🔄 Refresh</button>
+                    <button class="secondary" id="open-settings">⚙️ Settings</button>
+                </div>
+            </div>
+            <div class="hero-metrics" id="hero-metrics">
+                <div class="metric-card">
+                    <span>Strategies</span>
+                    <strong data-metric="totalStrategies">0</strong>
+                </div>
+                <div class="metric-card">
+                    <span>Best Fitness</span>
+                    <strong data-metric="bestFitness" class="highlight">0.00</strong>
+                </div>
+                <div class="metric-card">
+                    <span>Avg Fitness</span>
+                    <strong data-metric="avgFitness">0.00</strong>
+                </div>
+                <div class="metric-card">
+                    <span>Evolution Δ</span>
+                    <strong data-metric="velocity">0.00</strong>
+                </div>
+            </div>
+        </header>
+
+        <section class="panel" id="backtesting-panel">
+            <div class="panel-head">
+                <div>
+                    <p class="eyebrow">📊 Backtesting</p>
+                    <h2>Test Strategies Before Deployment</h2>
+                    <p class="sub">Run comprehensive backtests to validate strategy performance with historical data.</p>
+                </div>
+                <div class="panel-actions">
+                    <button class="primary" id="run-backtest-btn">▶ Run Backtest</button>
+                </div>
+            </div>
+            
+            <div class="backtest-content">
+                <!-- Quick Presets -->
+                <div class="preset-section">
+                    <h3>Quick Start Presets</h3>
+                    <div class="preset-grid" id="preset-grid">
+                        <div class="placeholder">Loading presets...</div>
+                    </div>
+                </div>
+                
+                <!-- Backtest Results -->
+                <div class="backtest-results" id="backtest-results" style="display: none;">
+                    <div class="results-header">
+                        <h3>Backtest Results</h3>
+                        <div class="results-summary">
+                            <div class="summary-metric">
+                                <span class="metric-label">Total Return</span>
+                                <span class="metric-value profit" id="bt-return">+0.0%</span>
+                            </div>
+                            <div class="summary-metric">
+                                <span class="metric-label">Sharpe Ratio</span>
+                                <span class="metric-value" id="bt-sharpe">0.00</span>
+                            </div>
+                            <div class="summary-metric">
+                                <span class="metric-label">Win Rate</span>
+                                <span class="metric-value" id="bt-winrate">0%</span>
+                            </div>
+                            <div class="summary-metric">
+                                <span class="metric-label">Max Drawdown</span>
+                                <span class="metric-value loss" id="bt-drawdown">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="results-tabs">
+                        <button class="results-tab active" data-tab="overview">Overview</button>
+                        <button class="results-tab" data-tab="trades">Trades</button>
+                        <button class="results-tab" data-tab="equity">Equity Curve</button>
+                    </div>
+                    
+                    <div class="results-content">
+                        <div class="results-panel active" data-panel="overview">
+                            <div class="metrics-grid">
+                                <div class="metric-card">
+                                    <span>Total Trades</span>
+                                    <strong id="bt-total-trades">0</strong>
+                                </div>
+                                <div class="metric-card">
+                                    <span>Winning</span>
+                                    <strong id="bt-winning" class="profit">0</strong>
+                                </div>
+                                <div class="metric-card">
+                                    <span>Losing</span>
+                                    <strong id="bt-losing" class="loss">0</strong>
+                                </div>
+                                <div class="metric-card">
+                                    <span>Profit Factor</span>
+                                    <strong id="bt-pf">0.00</strong>
+                                </div>
+                                <div class="metric-card">
+                                    <span>Avg Win</span>
+                                    <strong id="bt-avg-win" class="profit">$0</strong>
+                                </div>
+                                <div class="metric-card">
+                                    <span>Avg Loss</span>
+                                    <strong id="bt-avg-loss" class="loss">$0</strong>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="results-panel" data-panel="trades">
+                            <div class="trades-list" id="bt-trades-list">
+                                <p class="empty-state">No trades to display</p>
+                            </div>
+                        </div>
+                        
+                        <div class="results-panel" data-panel="equity">
+                            <canvas id="equity-chart" width="800" height="300"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="results-actions">
+                        <button class="primary" onclick="deployFromBacktest()">🚀 Deploy This Strategy</button>
+                        <button class="secondary" onclick="exportBacktest()">📥 Export Results</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel" id="evolution-control-panel">
+            <div class="panel-head">
+                <div>
+                    <p class="eyebrow">Strategy Evolution</p>
+                    <h2>LLM-Powered Meta-Evolution</h2>
+                    <p class="sub">Generate, backtest, and evolve trading strategies using AI.</p>
+                </div>
+                <div class="panel-actions">
+                    <button class="primary" id="start-evolution" data-action="start">▶ Start Evolution</button>
+                    <button class="primary ghost" id="stop-evolution" disabled>⏸ Stop</button>
+                </div>
+            </div>
+            <div class="evolution-controls">
+                <div class="control-group">
+                    <label for="num-generations">Generations</label>
+                    <input type="number" id="num-generations" min="1" max="20" value="5" />
+                </div>
+                <div class="control-group">
+                    <label for="population-size">Population</label>
+                    <input type="number" id="population-size" min="1" max="10" value="3" />
+                </div>
+                <div class="control-group">
+                    <label>
+                        <input type="checkbox" id="use-llm" checked />
+                        Use LLM
+                    </label>
+                </div>
+                <div class="control-group">
+                    <label>
+                        <input type="checkbox" id="use-crawled" checked />
+                        Include GitHub/TV
+                    </label>
+                </div>
+            </div>
+            <div class="evolution-status" id="evolution-status">
+                <div class="status-bar">
+                    <div class="status-label">Status: <span id="status-text">Idle</span></div>
+                    <div class="status-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                        </div>
+                        <div class="progress-text" id="progress-text">0/0 generations</div>
+                    </div>
+                </div>
+                <div class="status-metrics">
+                    <div class="metric-item">
+                        <span>Best Fitness</span>
+                        <strong id="best-fitness">0.000</strong>
+                    </div>
+                    <div class="metric-item">
+                        <span>Avg Fitness</span>
+                        <strong id="avg-fitness">0.000</strong>
+                    </div>
+                    <div class="metric-item">
+                        <span>Strategies</span>
+                        <strong id="strategies-count">0</strong>
+                    </div>
+                    <div class="metric-item">
+                        <span>Time</span>
+                        <strong id="elapsed-time">0s</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="evolution-feed" id="evolution-feed">
+                <div class="feed-header">Live Evolution Feed</div>
+                <div class="feed-content" id="feed-content">
+                    <div class="feed-message">Waiting to start evolution...</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel" id="live-trading-panel">
+            <div class="panel-head">
+                <div>
+                    <p class="eyebrow">💰 Live trading</p>
+                    <h2>Deploy & Monitor Real-Time Trading</h2>
+                    <p class="sub">Deploy strategies for paper or live trading with institutional-grade risk management.</p>
+                </div>
+                <div class="panel-actions">
+                    <button class="danger" id="emergency-stop-btn" style="display: none;">
+                        🚨 Emergency Stop
+                    </button>
+                </div>
+            </div>
+            
+            <div class="trading-dashboard">
+                <!-- Active Deployments -->
+                <div class="deployments-section">
+                    <h3 class="section-title">Active Deployments</h3>
+                    <div id="deployments-grid" class="deployments-grid">
+                        <div class="placeholder">No active deployments. Deploy a strategy from Hall of Fame to start trading.</div>
+                    </div>
+                </div>
+                
+                <!-- Position Monitor -->
+                <div class="positions-section">
+                    <h3 class="section-title">Open Positions</h3>
+                    <div id="positions-table-container">
+                        <table id="positions-table" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Side</th>
+                                    <th>Entry</th>
+                                    <th>Current</th>
+                                    <th>Qty</th>
+                                    <th>P&L</th>
+                                    <th>P&L %</th>
+                                    <th>Duration</th>
+                                </tr>
+                            </thead>
+                            <tbody id="positions-tbody">
+                                <tr>
+                                    <td colspan="8" class="empty-state">No open positions</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Trade History -->
+                <div class="history-section">
+                    <h3 class="section-title">Recent Trades</h3>
+                    <div id="history-table-container">
+                        <table id="history-table" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Symbol</th>
+                                    <th>Side</th>
+                                    <th>Entry</th>
+                                    <th>Exit</th>
+                                    <th>P&L</th>
+                                    <th>P&L %</th>
+                                    <th>Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-tbody">
+                                <tr>
+                                    <td colspan="8" class="empty-state">No trades yet</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel" id="chart-panel">
+            <div class="panel-head">
+                <div>
+                    <p class="eyebrow">Strategy Visualization</p>
+                    <h2>Strategy Evolution & Backtest Results</h2>
+                    <p class="sub">Visualize strategy performance with trades, signals, and equity curves on live market data.</p>
+                </div>
+                <div class="panel-actions">
+                    <select id="strategy-selector" class="chart-control">
+                        <option value="">Market View (No Strategy)</option>
+                    </select>
+                    <select id="chart-symbol" class="chart-control">
+                        <option value="ADAEUR">ADAEUR</option>
+                        <option value="BTCUSDT">BTCUSDT</option>
+                        <option value="ETHUSDT">ETHUSDT</option>
+                        <option value="BNBUSDT">BNBUSDT</option>
+                        <option value="SOLUSDT">SOLUSDT</option>
+                    </select>
+                    <select id="chart-timeframe" class="chart-control">
+                        <option value="1m">1m</option>
+                        <option value="5m">5m</option>
+                        <option value="15m">15m</option>
+                        <option value="1h">1h</option>
+                        <option value="4h">4h</option>
+                    </select>
+                    <label class="chart-toggle">
+                        <input type="checkbox" id="show-trades" />
+                        <span>Trades</span>
+                    </label>
+                    <label class="chart-toggle">
+                        <input type="checkbox" id="show-equity" />
+                        <span>Equity</span>
+                    </label>
+                    <button class="primary ghost" id="refresh-chart">Refresh</button>
+                </div>
+            </div>
+            <div class="strategy-info" id="strategy-info" style="display: none;">
+                <div class="strategy-info-header">
+                    <h3 id="info-strategy-name">Strategy Name</h3>
+                    <div id="deployment-status" class="deployment-badge" style="display: none;">
+                        <span class="status-indicator"></span>
+                        <span class="status-text">DEPLOYED</span>
+                    </div>
+                </div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Fitness</span>
+                        <span class="info-value" id="info-fitness">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Sharpe</span>
+                        <span class="info-value" id="info-sharpe">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Max DD</span>
+                        <span class="info-value" id="info-drawdown">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Win Rate</span>
+                        <span class="info-value" id="info-winrate">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Trades</span>
+                        <span class="info-value" id="info-trades">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Profit Factor</span>
+                        <span class="info-value" id="info-pf">-</span>
+                    </div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <img id="candlestick-chart" src="" alt="Loading chart..." class="chart-image"/>
+                <div class="chart-loading" id="chart-loading">
+                    <div class="spinner"></div>
+                    <p>Generating chart...</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel" id="evolution-panel">
+            <div class="panel-head">
+                <div>
+                    <p class="eyebrow">Evolution intelligence</p>
+                    <h2>Evolution pulse</h2>
+                    <p class="sub">Visualize generation progress, fitness acceleration, and recent breakthroughs.</p>
+                </div>
+                <div class="phase-breakdown" id="phase-breakdown"></div>
+            </div>
+            <div class="chart-shell">
+                <svg id="evolution-chart" role="img" aria-label="Evolution fitness timeline"></svg>
+            </div>
+            <div class="events" id="evolution-events"></div>
+        </section>
+
+        <section class="panel" id="hall-of-fame">
+            <div class="panel-head">
+                <div>
+                    <p class="eyebrow">Hall of fame</p>
+                    <h2>Deployment-ready strategies</h2>
+                    <p class="sub">Review the best evolved genomes, inspect metrics, and launch fresh simulations directly.</p>
+                </div>
+                <div class="panel-actions">
+                    <button class="primary ghost" id="refresh-strategies">Reload strategies</button>
+                </div>
+            </div>
+            <div id="strategy-grid" class="card-grid">
+                <div class="placeholder">Loading legendary strategies…</div>
+            </div>
+        </section>
+
+        <section class="panel" id="validation-dashboard">
+            <div class="panel-head">
+                <div>
+                    <p class="eyebrow">🔬 Strategy Validation Pipeline</p>
+                    <h2>Comprehensive Deployment Validation</h2>
+                    <p class="sub">5-phase validation: Multi-market testing, profit analysis, walk-forward validation, Monte Carlo simulation, and deployment readiness assessment.</p>
+                </div>
+                <div class="panel-actions">
+                    <button class="primary" id="run-full-validation">▶ Run Full Validation</button>
+                    <button class="secondary" id="quick-test">⚡ Quick Test</button>
+                </div>
+            </div>
+            
+            <!-- Validation Progress -->
+            <div class="validation-progress" id="validation-progress" style="display: none;">
+                <div class="progress-steps">
+                    <div class="step" data-step="1">
+                        <div class="step-number">1</div>
+                        <div class="step-label">Multi-Market</div>
+                        <div class="step-status">Pending</div>
+                    </div>
+                    <div class="step" data-step="2">
+                        <div class="step-number">2</div>
+                        <div class="step-label">Profit Analysis</div>
+                        <div class="step-status">Pending</div>
+                    </div>
+                    <div class="step" data-step="3">
+                        <div class="step-number">3</div>
+                        <div class="step-label">Walk-Forward</div>
+                        <div class="step-status">Pending</div>
+                    </div>
+                    <div class="step" data-step="4">
+                        <div class="step-number">4</div>
+                        <div class="step-label">Monte Carlo</div>
+                        <div class="step-status">Pending</div>
+                    </div>
+                    <div class="step" data-step="5">
+                        <div class="step-number">5</div>
+                        <div class="step-label">Readiness</div>
+                        <div class="step-status">Pending</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Validation Tabs -->
+            <div class="validation-tabs">
+                <button class="validation-tab active" data-tab="overview">Overview</button>
+                <button class="validation-tab" data-tab="multi-market">Multi-Market</button>
+                <button class="validation-tab" data-tab="profit">Profit Analysis</button>
+                <button class="validation-tab" data-tab="walk-forward">Walk-Forward</button>
+                <button class="validation-tab" data-tab="monte-carlo">Monte Carlo</button>
+                <button class="validation-tab" data-tab="readiness">Deployment</button>
+            </div>
+            
+            <!-- Tab Content: Overview -->
+            <div class="validation-tab-content active" data-content="overview">
+                <div class="validation-overview">
+                    <div class="overview-header">
+                        <h3>Validation Summary</h3>
+                        <div class="overall-status" id="overall-status">
+                            <span class="status-badge pending">NOT VALIDATED</span>
+                            <span class="readiness-score">Score: <strong>--/100</strong></span>
+                        </div>
+                    </div>
+                    
+                    <div class="component-scores">
+                        <div class="score-card" data-component="multi-market">
+                            <div class="score-header">
+                                <span class="component-name">Multi-Market Testing</span>
+                                <span class="score-value">--/100</span>
+                            </div>
+                            <div class="score-bar">
+                                <div class="score-fill" style="width: 0%"></div>
+                            </div>
+                            <div class="score-details">
+                                <span class="detail-item">Pass Rate: <strong>--%</strong></span>
+                                <span class="detail-item">Markets: <strong>0/0</strong></span>
+                            </div>
+                        </div>
+                        
+                        <div class="score-card" data-component="profit">
+                            <div class="score-header">
+                                <span class="component-name">Profit Analysis</span>
+                                <span class="score-value">--/100</span>
+                            </div>
+                            <div class="score-bar">
+                                <div class="score-fill" style="width: 0%"></div>
+                            </div>
+                            <div class="score-details">
+                                <span class="detail-item">Quality: <strong>--/100</strong></span>
+                                <span class="detail-item">Sharpe: <strong>--</strong></span>
+                            </div>
+                        </div>
+                        
+                        <div class="score-card" data-component="walk-forward">
+                            <div class="score-header">
+                                <span class="component-name">Walk-Forward</span>
+                                <span class="score-value">--/100</span>
+                            </div>
+                            <div class="score-bar">
+                                <div class="score-fill" style="width: 0%"></div>
+                            </div>
+                            <div class="score-details">
+                                <span class="detail-item">Overfitting: <strong>--</strong></span>
+                                <span class="detail-item">Periods: <strong>0/0</strong></span>
+                            </div>
+                        </div>
+                        
+                        <div class="score-card" data-component="monte-carlo">
+                            <div class="score-header">
+                                <span class="component-name">Monte Carlo</span>
+                                <span class="score-value">--/100</span>
+                            </div>
+                            <div class="score-bar">
+                                <div class="score-fill" style="width: 0%"></div>
+                            </div>
+                            <div class="score-details">
+                                <span class="detail-item">P(Profit): <strong>--%</strong></span>
+                                <span class="detail-item">P(Ruin): <strong>--%</strong></span>
+                            </div>
+                        </div>
+                        
+                        <div class="score-card" data-component="readiness">
+                            <div class="score-header">
+                                <span class="component-name">Risk Management</span>
+                                <span class="score-value">--/100</span>
+                            </div>
+                            <div class="score-bar">
+                                <div class="score-fill" style="width: 0%"></div>
+                            </div>
+                            <div class="score-details">
+                                <span class="detail-item">Risk Level: <strong>--</strong></span>
+                                <span class="detail-item">Position Size: <strong>--%</strong></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="recommendations" id="validation-recommendations">
+                        <h4>Recommendations</h4>
+                        <div class="empty-state">
+                            Run validation to get deployment recommendations
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tab Content: Multi-Market -->
+            <div class="validation-tab-content" data-content="multi-market">
+                <div class="multi-market-section">
+                    <div class="section-header">
+                        <h3>Multi-Market Testing Results</h3>
+                        <button class="secondary" id="configure-markets">⚙️ Configure Markets</button>
+                    </div>
+            
+            <!-- Market Configuration Panel -->
+            <div class="market-config-panel" id="market-config-panel" style="display: none;">
+                <div class="config-section">
+                    <h3>Select Markets</h3>
+                    <div class="market-selector" id="market-selector">
+                        <!-- Markets will be loaded dynamically -->
+                    </div>
+                </div>
+                <div class="config-section">
+                    <h3>Select Timeframes</h3>
+                    <div class="timeframe-selector" id="timeframe-selector">
+                        <!-- Timeframes will be loaded dynamically -->
+                    </div>
+                </div>
+                <div class="config-actions">
+                    <button class="primary" id="apply-config">Apply & Test</button>
+                    <button class="secondary" id="cancel-config">Cancel</button>
+                </div>
+            </div>
+            
+            <!-- Results Table -->
+            <div class="multi-market-results" id="multi-market-results">
+                <div class="results-controls">
+                    <div class="search-box">
+                        <input type="text" id="strategy-search" placeholder="Search strategies..." />
+                    </div>
+                    <div class="filter-group">
+                        <label>
+                            <input type="checkbox" id="filter-approved" checked> Approved Only
+                        </label>
+                        <label>
+                            <input type="checkbox" id="filter-high-fitness"> High Fitness (>0.7)
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table class="data-table multi-market-table" id="multi-market-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable" data-sort="strategy_name">
+                                    Strategy <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable active desc" data-sort="avg_fitness">
+                                    Avg Fitness <span class="sort-icon">↓</span>
+                                </th>
+                                <th class="sortable" data-sort="avg_sharpe">
+                                    Avg Sharpe <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable" data-sort="pass_rate">
+                                    Pass Rate <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable" data-sort="max_drawdown">
+                                    Max DD <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable" data-sort="avg_win_rate">
+                                    Win Rate <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable" data-sort="markets_passed">
+                                    Markets Passed <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable" data-sort="status">
+                                    Status <span class="sort-icon">↕</span>
+                                </th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="multi-market-tbody">
+                            <tr>
+                                <td colspan="9" class="empty-state">
+                                    <p>No multi-market test results yet.</p>
+                                    <p class="sub">Click "Test All Markets" to start comprehensive validation.</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+                </div>
+            </div>
+            
+            <!-- Tab Content: Profit Analysis -->
+            <div class="validation-tab-content" data-content="profit">
+                <div class="profit-analysis-section">
+                    <h3>Profit Analysis Results</h3>
+                    
+                    <div class="profit-summary">
+                        <div class="metric-grid">
+                            <div class="metric-box">
+                                <span class="metric-label">Total Return</span>
+                                <span class="metric-value" id="profit-total-return">--%</span>
+                            </div>
+                            <div class="metric-box">
+                                <span class="metric-label">Annualized Return</span>
+                                <span class="metric-value" id="profit-annual-return">--%</span>
+                            </div>
+                            <div class="metric-box">
+                                <span class="metric-label">CAGR</span>
+                                <span class="metric-value" id="profit-cagr">--%</span>
+                            </div>
+                            <div class="metric-box">
+                                <span class="metric-label">Quality Score</span>
+                                <span class="metric-value highlight" id="profit-quality">--/100</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="risk-adjusted-metrics">
+                        <h4>Risk-Adjusted Metrics</h4>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>Value</th>
+                                    <th>95% CI Lower</th>
+                                    <th>95% CI Upper</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="risk-adjusted-tbody">
+                                <tr><td colspan="5" class="empty-state">No data</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="trade-statistics">
+                        <h4>Trade Statistics</h4>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span>Total Trades</span>
+                                <strong id="trade-total">0</strong>
+                            </div>
+                            <div class="stat-item">
+                                <span>Win Rate</span>
+                                <strong id="trade-winrate">0%</strong>
+                            </div>
+                            <div class="stat-item">
+                                <span>Profit Factor</span>
+                                <strong id="trade-pf">0.00</strong>
+                            </div>
+                            <div class="stat-item">
+                                <span>Average Win</span>
+                                <strong id="trade-avg-win">$0</strong>
+                            </div>
+                            <div class="stat-item">
+                                <span>Average Loss</span>
+                                <strong id="trade-avg-loss">$0</strong>
+                            </div>
+                            <div class="stat-item">
+                                <span>Kelly Criterion</span>
+                                <strong id="trade-kelly">0%</strong>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="statistical-validation">
+                        <h4>Statistical Validation</h4>
+                        <div class="validation-box">
+                            <div class="validation-result">
+                                <span class="label">T-Statistic:</span>
+                                <span class="value" id="stat-t-stat">--</span>
+                            </div>
+                            <div class="validation-result">
+                                <span class="label">P-Value:</span>
+                                <span class="value" id="stat-p-value">--</span>
+                            </div>
+                            <div class="validation-result">
+                                <span class="label">Statistically Significant:</span>
+                                <span class="value" id="stat-significant">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tab Content: Walk-Forward -->
+            <div class="validation-tab-content" data-content="walk-forward">
+                <div class="walk-forward-section">
+                    <h3>Walk-Forward Validation Results</h3>
+                    
+                    <div class="wf-summary">
+                        <div class="summary-box">
+                            <div class="summary-item">
+                                <span>Total Periods</span>
+                                <strong id="wf-total-periods">0</strong>
+                            </div>
+                            <div class="summary-item">
+                                <span>Periods Passed</span>
+                                <strong id="wf-passed-periods">0</strong>
+                            </div>
+                            <div class="summary-item">
+                                <span>Pass Rate</span>
+                                <strong id="wf-pass-rate">0%</strong>
+                            </div>
+                            <div class="summary-item">
+                                <span>Overfitting Score</span>
+                                <strong id="wf-overfitting" class="highlight">--/100</strong>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="performance-comparison">
+                        <h4>In-Sample vs Out-of-Sample Performance</h4>
+                        <div class="comparison-grid">
+                            <div class="comparison-col">
+                                <h5>In-Sample</h5>
+                                <div class="metric-item">
+                                    <span>Mean Return</span>
+                                    <strong id="wf-is-return">--%</strong>
+                                </div>
+                                <div class="metric-item">
+                                    <span>Mean Sharpe</span>
+                                    <strong id="wf-is-sharpe">--</strong>
+                                </div>
+                            </div>
+                            <div class="comparison-col">
+                                <h5>Out-of-Sample</h5>
+                                <div class="metric-item">
+                                    <span>Mean Return</span>
+                                    <strong id="wf-oos-return">--%</strong>
+                                </div>
+                                <div class="metric-item">
+                                    <span>Mean Sharpe</span>
+                                    <strong id="wf-oos-sharpe">--</strong>
+                                </div>
+                            </div>
+                            <div class="comparison-col">
+                                <h5>Degradation</h5>
+                                <div class="metric-item">
+                                    <span>Performance</span>
+                                    <strong id="wf-perf-deg" class="warning">--%</strong>
+                                </div>
+                                <div class="metric-item">
+                                    <span>Sharpe</span>
+                                    <strong id="wf-sharpe-deg" class="warning">--%</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="period-details">
+                        <h4>Period-by-Period Results</h4>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Period</th>
+                                    <th>IS Return</th>
+                                    <th>OOS Return</th>
+                                    <th>IS Sharpe</th>
+                                    <th>OOS Sharpe</th>
+                                    <th>Degradation</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="wf-periods-tbody">
+                                <tr><td colspan="7" class="empty-state">No data</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="overfitting-assessment">
+                        <h4>Overfitting Assessment</h4>
+                        <div class="assessment-box">
+                            <div class="assessment-item">
+                                <span class="label">Overfitting Detected:</span>
+                                <span class="value" id="wf-overfitting-detected">--</span>
+                            </div>
+                            <div class="assessment-item">
+                                <span class="label">Performance Stable:</span>
+                                <span class="value" id="wf-stable">--</span>
+                            </div>
+                            <div class="assessment-item">
+                                <span class="label">Consistency:</span>
+                                <span class="value" id="wf-consistency">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tab Content: Monte Carlo -->
+            <div class="validation-tab-content" data-content="monte-carlo">
+                <div class="monte-carlo-section">
+                    <h3>Monte Carlo Simulation Results</h3>
+                    
+                    <div class="mc-summary">
+                        <div class="summary-grid">
+                            <div class="metric-box">
+                                <span class="metric-label">Simulations</span>
+                                <span class="metric-value" id="mc-num-sims">0</span>
+                            </div>
+                            <div class="metric-box">
+                                <span class="metric-label">Mean Return</span>
+                                <span class="metric-value" id="mc-mean-return">--%</span>
+                            </div>
+                            <div class="metric-box">
+                                <span class="metric-label">Median Return</span>
+                                <span class="metric-value" id="mc-median-return">--%</span>
+                            </div>
+                            <div class="metric-box">
+                                <span class="metric-label">Robustness Score</span>
+                                <span class="metric-value highlight" id="mc-robustness">--/100</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="return-distribution">
+                        <h4>Return Distribution</h4>
+                        <div class="distribution-stats">
+                            <div class="stat">
+                                <span>Std Deviation</span>
+                                <strong id="mc-std">--%</strong>
+                            </div>
+                            <div class="stat">
+                                <span>Min Return</span>
+                                <strong id="mc-min">--%</strong>
+                            </div>
+                            <div class="stat">
+                                <span>Max Return</span>
+                                <strong id="mc-max">--%</strong>
+                            </div>
+                            <div class="stat">
+                                <span>95% CI</span>
+                                <strong id="mc-ci">[-- , --]</strong>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="risk-metrics">
+                        <h4>Risk Metrics</h4>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>Value</th>
+                                    <th>Threshold</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Probability of Profit</td>
+                                    <td id="mc-prob-profit">--%</td>
+                                    <td>≥ 65%</td>
+                                    <td><span class="status-badge" id="mc-prob-profit-status">--</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Probability of Ruin</td>
+                                    <td id="mc-prob-ruin">--%</td>
+                                    <td>≤ 5%</td>
+                                    <td><span class="status-badge" id="mc-prob-ruin-status">--</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Value at Risk (95%)</td>
+                                    <td id="mc-var">--%</td>
+                                    <td>--</td>
+                                    <td>--</td>
+                                </tr>
+                                <tr>
+                                    <td>Conditional VaR (95%)</td>
+                                    <td id="mc-cvar">--%</td>
+                                    <td>--</td>
+                                    <td>--</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="robustness-assessment">
+                        <h4>Robustness Assessment</h4>
+                        <div class="assessment-grid">
+                            <div class="assessment-card">
+                                <span class="label">Parameter Robustness</span>
+                                <span class="value" id="mc-param-robust">--</span>
+                            </div>
+                            <div class="assessment-card">
+                                <span class="label">Timing Robustness</span>
+                                <span class="value" id="mc-timing-robust">--</span>
+                            </div>
+                            <div class="assessment-card">
+                                <span class="label">Stress Test Robustness</span>
+                                <span class="value" id="mc-stress-robust">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tab Content: Deployment Readiness -->
+            <div class="validation-tab-content" data-content="readiness">
+                <div class="readiness-section">
+                    <h3>Deployment Readiness Assessment</h3>
+                    
+                    <div class="readiness-header">
+                        <div class="status-display">
+                            <span class="status-badge large" id="deploy-status">NOT VALIDATED</span>
+                            <div class="risk-badge" id="deploy-risk">Risk Level: <strong>--</strong></div>
+                        </div>
+                        <div class="score-display">
+                            <div class="score-circle">
+                                <svg width="120" height="120">
+                                    <circle cx="60" cy="60" r="50" fill="none" stroke="#eee" stroke-width="10"/>
+                                    <circle cx="60" cy="60" r="50" fill="none" stroke="#4CAF50" stroke-width="10" 
+                                            stroke-dasharray="314" stroke-dashoffset="314" id="deploy-score-circle"/>
+                                </svg>
+                                <div class="score-text" id="deploy-score-text">--</div>
+                            </div>
+                            <p>Overall Readiness Score</p>
+                        </div>
+                    </div>
+                    
+                    <div class="validation-checks">
+                        <h4>Validation Checklist</h4>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Check</th>
+                                    <th>Value</th>
+                                    <th>Threshold</th>
+                                    <th>Critical</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="validation-checks-tbody">
+                                <tr><td colspan="5" class="empty-state">No validation checks run</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="critical-failures" id="critical-failures" style="display: none;">
+                        <h4>❌ Critical Failures</h4>
+                        <ul id="critical-failures-list"></ul>
+                    </div>
+                    
+                    <div class="warnings" id="warnings-section" style="display: none;">
+                        <h4>⚠️ Warnings</h4>
+                        <ul id="warnings-list"></ul>
+                    </div>
+                    
+                    <div class="recommended-parameters">
+                        <h4>Recommended Trading Parameters</h4>
+                        <div class="params-grid">
+                            <div class="param-item">
+                                <span class="param-label">Position Size</span>
+                                <span class="param-value" id="deploy-position-size">--%</span>
+                            </div>
+                            <div class="param-item">
+                                <span class="param-label">Max Exposure</span>
+                                <span class="param-value" id="deploy-max-exposure">--%</span>
+                            </div>
+                            <div class="param-item">
+                                <span class="param-label">Daily Loss Limit</span>
+                                <span class="param-value" id="deploy-loss-limit">--%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="deployment-recommendations">
+                        <h4>Recommendations</h4>
+                        <ul id="deploy-recommendations-list">
+                            <li class="empty-state">Run validation to get recommendations</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="deployment-actions">
+                        <button class="primary large" id="approve-deployment" disabled>✅ Approve for Deployment</button>
+                        <button class="secondary" id="export-validation-report">📥 Export Report</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel" id="debug-console">
+            <div class="panel-head">
+                <div>
+                    <p class="eyebrow">LLM debugger</p>
+                    <h2>Chat-grade observability</h2>
+                    <p class="sub">Every prompt, response, and validation issue surfaces here for post-mortem friendly debugging.</p>
+                </div>
+                <div class="panel-actions">
+                    <button class="primary ghost" id="refresh-sessions">Reload sessions</button>
+                </div>
+            </div>
+            <div class="debug-layout">
+                <aside id="llm-session-list" class="session-list">
+                    <div class="placeholder small">No sessions loaded yet.</div>
+                </aside>
+                <section id="llm-conversation" class="conversation">
+                    <div class="placeholder">
+                        Select a session to inspect the full conversation.
+                    </div>
+                </section>
+            </div>
+        </section>
+    </main>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content settings-modal-content">
+            <div class="modal-header">
+                <h3>⚙️ Application Settings</h3>
+                <button class="modal-close" onclick="closeSettings()">&times;</button>
+            </div>
+            <div class="modal-body settings-modal-body">
+                <!-- Settings Tabs -->
+                <div class="settings-tabs">
+                    <button class="settings-tab active" data-tab="exchange">🔗 Exchange</button>
+                    <button class="settings-tab" data-tab="llm">🤖 LLM</button>
+                    <button class="settings-tab" data-tab="risk">🛡️ Risk</button>
+                    <button class="settings-tab" data-tab="evolution">🧬 Evolution</button>
+                    <button class="settings-tab" data-tab="ui">🎨 UI</button>
+                </div>
+                
+                <!-- Settings Content -->
+                <div class="settings-content">
+                    <!-- Exchange Settings -->
+                    <div class="settings-panel active" data-panel="exchange">
+                        <h4>Exchange Connection</h4>
+                        <div class="form-group">
+                            <label>Exchange</label>
+                            <select id="settings-exchange">
+                                <option value="binance">Binance</option>
+                                <option value="binance-us">Binance US</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>API Key</label>
+                            <input type="password" id="settings-api-key" placeholder="Enter API key" />
+                        </div>
+                        <div class="form-group">
+                            <label>API Secret</label>
+                            <input type="password" id="settings-api-secret" placeholder="Enter API secret" />
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="settings-testnet" />
+                                Use Testnet (Recommended for testing)
+                            </label>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Default Symbol</label>
+                                <input type="text" id="settings-default-symbol" value="ADAEUR" />
+                            </div>
+                            <div class="form-group">
+                                <label>Default Timeframe</label>
+                                <select id="settings-default-timeframe">
+                                    <option value="1m">1 minute</option>
+                                    <option value="5m">5 minutes</option>
+                                    <option value="15m">15 minutes</option>
+                                    <option value="1h">1 hour</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="secondary" onclick="validateExchange()">🔍 Test Connection</button>
+                        <div id="exchange-validation" class="validation-message"></div>
+                    </div>
+                    
+                    <!-- LLM Settings -->
+                    <div class="settings-panel" data-panel="llm">
+                        <h4>LLM Configuration</h4>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="settings-llm-enabled" />
+                                Enable LLM-powered strategy generation
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>Provider</label>
+                            <select id="settings-llm-provider">
+                                <option value="deepseek">DeepSeek (Local)</option>
+                                <option value="openai">OpenAI</option>
+                                <option value="local">Local LM Studio</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>API URL</label>
+                            <input type="text" id="settings-llm-url" placeholder="http://127.0.0.1:1234/v1" />
+                            <small>For local LM Studio or custom endpoint</small>
+                        </div>
+                        <div class="form-group">
+                            <label>API Key (if required)</label>
+                            <input type="password" id="settings-llm-key" placeholder="Optional for local" />
+                        </div>
+                        <div class="form-group">
+                            <label>Model</label>
+                            <input type="text" id="settings-llm-model" value="deepseek-r1-0528-qwen3-8b" />
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Temperature</label>
+                                <input type="number" id="settings-llm-temp" min="0" max="2" step="0.1" value="0.7" />
+                                <small>0.0 = deterministic, 2.0 = creative</small>
+                            </div>
+                            <div class="form-group">
+                                <label>Max Tokens</label>
+                                <input type="number" id="settings-llm-tokens" min="500" max="8000" step="100" value="2000" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Timeout (seconds)</label>
+                            <input type="number" id="settings-llm-timeout" min="30" max="300" step="10" value="120" />
+                        </div>
+                        <button class="secondary" onclick="validateLLM()">🔍 Test Connection</button>
+                        <div id="llm-validation" class="validation-message"></div>
+                    </div>
+                    
+                    <!-- Risk Settings -->
+                    <div class="settings-panel" data-panel="risk">
+                        <h4>Default Risk Parameters</h4>
+                        <p class="settings-help">These are default values used when deploying strategies</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Max Position Size (%)</label>
+                                <input type="number" id="settings-risk-position" min="0.1" max="10" step="0.1" value="2" />
+                                <small>% of portfolio per trade</small>
+                            </div>
+                            <div class="form-group">
+                                <label>Max Daily Loss (%)</label>
+                                <input type="number" id="settings-risk-daily" min="0.1" max="5" step="0.1" value="1" />
+                                <small>Trading pauses if exceeded</small>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Max Drawdown (%)</label>
+                                <input type="number" id="settings-risk-drawdown" min="1" max="20" step="0.5" value="5" />
+                            </div>
+                            <div class="form-group">
+                                <label>Max Open Positions</label>
+                                <input type="number" id="settings-risk-positions" min="1" max="10" value="3" />
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="settings-risk-sl" />
+                                    Enable Stop Loss
+                                </label>
+                                <input type="number" id="settings-risk-sl-pct" min="0.5" max="10" step="0.5" value="2" />
+                                <small>%</small>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="settings-risk-tp" />
+                                    Enable Take Profit
+                                </label>
+                                <input type="number" id="settings-risk-tp-pct" min="1" max="20" step="0.5" value="5" />
+                                <small>%</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Evolution Settings -->
+                    <div class="settings-panel" data-panel="evolution">
+                        <h4>Evolution Defaults</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Default Generations</label>
+                                <input type="number" id="settings-evo-gens" min="1" max="50" value="5" />
+                            </div>
+                            <div class="form-group">
+                                <label>Default Population</label>
+                                <input type="number" id="settings-evo-pop" min="1" max="20" value="3" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="settings-evo-llm" />
+                                Use LLM by default
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="settings-evo-crawled" />
+                                Include GitHub/TradingView strategies
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>Backtest Data (days)</label>
+                            <input type="number" id="settings-evo-days" min="7" max="365" value="30" />
+                            <small>Historical data for backtesting</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Fitness Metric</label>
+                            <select id="settings-evo-metric">
+                                <option value="sharpe_ratio">Sharpe Ratio</option>
+                                <option value="total_return">Total Return</option>
+                                <option value="win_rate">Win Rate</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- UI Settings -->
+                    <div class="settings-panel" data-panel="ui">
+                        <h4>UI Preferences</h4>
+                        <div class="form-group">
+                            <label>Theme</label>
+                            <select id="settings-ui-theme">
+                                <option value="dark">Dark</option>
+                                <option value="light">Light (Coming Soon)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="settings-ui-autorefresh" />
+                                Auto-refresh data
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>Refresh Interval (seconds)</label>
+                            <input type="number" id="settings-ui-interval" min="1" max="30" value="2" />
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Chart Default Symbol</label>
+                                <input type="text" id="settings-ui-symbol" value="ADAEUR" />
+                            </div>
+                            <div class="form-group">
+                                <label>Chart Default Timeframe</label>
+                                <select id="settings-ui-tf">
+                                    <option value="1m">1 minute</option>
+                                    <option value="5m">5 minutes</option>
+                                    <option value="15m">15 minutes</option>
+                                    <option value="1h">1 hour</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="settings-ui-notifications" />
+                                Enable notifications
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="settings-ui-sound" />
+                                Enable sound effects
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="primary" onclick="saveSettings()">💾 Save Settings</button>
+                <button class="secondary" onclick="resetSettings()">🔄 Reset to Defaults</button>
+                <button class="secondary" onclick="closeSettings()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Strategy Code Modal -->
+    <div id="code-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="code-modal-title">Strategy Code</h3>
+                <button class="modal-close" onclick="closeCodeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <pre><code id="code-modal-code">// Loading...</code></pre>
+            </div>
+            <div class="modal-footer">
+                <button class="primary" onclick="copyCodeToClipboard()">📋 Copy to Clipboard</button>
+                <button class="secondary" onclick="closeCodeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deploy Strategy Modal -->
+    <div id="deploy-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="deploy-modal-title">Deploy Strategy for Trading</h3>
+                <button class="modal-close" onclick="closeDeployModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="deploy-form" class="deploy-form">
+                    <input type="hidden" id="deploy-strategy-id" />
+                    
+                    <div class="form-section">
+                        <h4>Trading Mode</h4>
+                        <div class="form-group">
+                            <label>
+                                <input type="radio" name="mode" value="paper" checked />
+                                <span class="radio-label">📝 Paper Trading (Simulated)</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="mode" value="live" />
+                                <span class="radio-label">💰 Live Trading (Real Money)</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h4>Trading Parameters</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Symbols</label>
+                                <input type="text" id="deploy-symbols" value="ADAEUR" placeholder="ADAEUR,BTCUSDT" />
+                            </div>
+                            <div class="form-group">
+                                <label>Timeframe</label>
+                                <select id="deploy-timeframe">
+                                    <option value="1m">1 minute</option>
+                                    <option value="5m">5 minutes</option>
+                                    <option value="15m">15 minutes</option>
+                                    <option value="1h">1 hour</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h4>Risk Management</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Max Position Size (%)</label>
+                                <input type="number" id="deploy-position-size" value="2" min="0.1" max="10" step="0.1" />
+                                <small>Percentage of portfolio per trade</small>
+                            </div>
+                            <div class="form-group">
+                                <label>Max Daily Loss (%)</label>
+                                <input type="number" id="deploy-daily-loss" value="1" min="0.1" max="5" step="0.1" />
+                                <small>Trading pauses if exceeded</small>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Max Open Positions</label>
+                                <input type="number" id="deploy-max-positions" value="3" min="1" max="10" />
+                            </div>
+                            <div class="form-group">
+                                <label>Max Drawdown (%)</label>
+                                <input type="number" id="deploy-drawdown" value="5" min="1" max="20" step="0.5" />
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="deploy-stop-loss" checked />
+                                    Enable Stop Loss (2%)
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="deploy-take-profit" checked />
+                                    Enable Take Profit (5%)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section warning-section">
+                        <h4>⚠️ Warning</h4>
+                        <p class="warning-text">
+                            <strong>Paper trading</strong> uses simulated money for testing.<br>
+                            <strong>Live trading</strong> uses real money and can result in financial loss.<br>
+                            Only enable live trading if you understand the risks.
+                        </p>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="primary" onclick="confirmDeploy()">🚀 Deploy Strategy</button>
+                <button class="secondary" onclick="closeDeployModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.__SEED_OVERVIEW__ = {{ seed_overview | tojson }};
+    </script>
+    <script type="module" src="/static/app.js"></script>
+    <script src="/static/evolution.js"></script>
+    <script src="/static/live_trading.js"></script>
+    <script src="/static/settings.js"></script>
+    <script src="/static/multi_market.js"></script>
+    <script src="/static/validation.js"></script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "id": "chatcmpl-xkdrn37fuvikplwaqumy2",
+  "object": "chat.completion",
+  "created": 1763287702,
+  "model": "google/gemma-3n-e4b",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "```python\nfrom pynecore import script, input, plot, color, Series\n\n@script.indicator(title=\"RSI & SMA Momentum\", overlay=True)\ndef main():\n    # 1. Define inputs\n    rsi_period = input.int(\"RSI Period\", 14)\n    sma_period = input.int(\"SMA Period\", 20)\n\n    # 2. Calculate indicators\n    rsi_value = close.rsi(rsi_period)\n    sma_value = close.sma(sma_period)\n\n    # 3. Generate signals\n    buy_signal = rsi_value < 30 and close > sma_value\n    sell_signal = rsi_value > 70 and close < sma_value\n\n    # 4. Plot results\n    plot(buy_signal, \"Buy\", color=color.green)\n    plot(sell_signal, \"Sell\", color=color.red)\n\n    return {\"buy\": buy_signal, \"sell\": sell_signal}\n```",
+        "tool_calls": []
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 494,
+    "completion_tokens": 228,
+    "total_tokens": 722
+  },
+  "stats": {},
+  "system_fingerprint": "google/gemma-3n-e4b"
+}
