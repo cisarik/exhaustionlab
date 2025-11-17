@@ -85,3 +85,4 @@ tmp/
 .Trashes
 ehthumbs.db
 Icon?
+poetry.lock
