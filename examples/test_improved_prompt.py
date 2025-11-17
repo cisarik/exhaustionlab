@@ -3,12 +3,13 @@
 Test IMPROVED prompt that explicitly prevents hallucinations
 """
 
-import sys
 import json
+import sys
 import time
-import requests
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+
+import requests
 
 OUTPUT_DIR = Path("llm_debug_logs")
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -50,18 +51,18 @@ from pynecore.lib import close
 def main():
     # 1. Define inputs (use ONLY input.int or input.float)
     period = input.int("Period", 14)
-    
+
     # 2. Calculate indicators
     rsi = close.rsi(period)
-    
+
     # 3. Generate signals (use & not 'and')
     buy = (rsi < 30) & (close > close.sma(20))
     sell = (rsi > 70) & (close < close.sma(20))
-    
+
     # 4. Plot (use EXACT syntax below)
     plot(buy, "Buy", color=color.green)
     plot(sell, "Sell", color=color.red)
-    
+
     return {"buy": buy, "sell": sell}
 
 ═══════════════════════════════════════════════════════════════════════════════
@@ -85,7 +86,7 @@ Where color.XXX can ONLY be:
 # ❌ NO style parameter
 plot(x, "Label", style=plot.Style.POINT)  # WRONG!
 
-# ❌ NO title parameter  
+# ❌ NO title parameter
 plot(x, "Label", title="X")  # WRONG!
 
 # ❌ NO linewidth, linestyle, etc.
@@ -123,18 +124,18 @@ def main():
     # Inputs
     rsi_period = input.int("RSI Period", 14)
     threshold = input.float("Threshold", 30.0)
-    
+
     # Calculate
     rsi = close.rsi(rsi_period)
-    
+
     # Signals (NOTE: Use & not and!)
     oversold = rsi < threshold
     overbought = rsi > (100 - threshold)
-    
+
     # Plot (NOTE: Only 3 parameters!)
     plot(oversold, "Oversold", color=color.green)
     plot(overbought, "Overbought", color=color.red)
-    
+
     return {"oversold": oversold, "overbought": overbought}
 
 ═══════════════════════════════════════════════════════════════════════════════
@@ -182,9 +183,7 @@ def test_model(model_name):
     start = time.time()
 
     try:
-        response = requests.post(
-            f"{BASE_URL}/v1/chat/completions", json=payload, timeout=120
-        )
+        response = requests.post(f"{BASE_URL}/v1/chat/completions", json=payload, timeout=120)
 
         elapsed = time.time() - start
 
@@ -238,11 +237,7 @@ def test_model(model_name):
 
             if " and " in code and "# and" not in code:
                 # Check if it's in a boolean expression
-                lines_with_and = [
-                    l
-                    for l in code.split("\n")
-                    if " and " in l and not l.strip().startswith("#")
-                ]
+                lines_with_and = [l for l in code.split("\n") if " and " in l and not l.strip().startswith("#")]
                 if any("=" in l and " and " in l for l in lines_with_and):
                     issues.append("⚠️ Found 'and' operator (should use &)")
                 else:
@@ -250,10 +245,7 @@ def test_model(model_name):
             else:
                 print("   ✅ No 'and' operator issues")
 
-            if (
-                "from pynecore.lib import close" not in code
-                and "from pynecore import *" not in code
-            ):
+            if "from pynecore.lib import close" not in code and "from pynecore import *" not in code:
                 if "close.rsi" in code or "close.sma" in code:
                     issues.append("⚠️ Uses 'close' but doesn't import from pynecore.lib")
             else:

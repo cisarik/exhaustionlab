@@ -18,15 +18,13 @@ from dataclasses import dataclass
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
-import pandas as pd
-import numpy as np
 import matplotlib
 
 matplotlib.use("Agg")  # Non-interactive backend
-import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 
 from .backtest_parser import BacktestResult
@@ -132,16 +130,8 @@ class ReportGenerator:
         metrics = self._generate_metrics_table(backtest, scores)
         charts = self._generate_charts(backtest) if self.config.include_charts else ""
         score_breakdown = self._generate_score_breakdown(scores)
-        trade_journal = (
-            self._generate_trade_journal(backtest)
-            if self.config.include_trade_journal
-            else ""
-        )
-        recommendations = (
-            self._generate_recommendations(backtest, scores)
-            if self.config.include_recommendations
-            else ""
-        )
+        trade_journal = self._generate_trade_journal(backtest) if self.config.include_trade_journal else ""
+        recommendations = self._generate_recommendations(backtest, scores) if self.config.include_recommendations else ""
         footer = self._generate_footer()
 
         # Combine all sections
@@ -196,23 +186,13 @@ class ReportGenerator:
 
         # Determine grade and status
         grade = self._get_grade(scores.total_score)
-        status_class = (
-            "approved"
-            if scores.total_score >= 75
-            else "warning" if scores.total_score >= 65 else "rejected"
-        )
-        status_text = (
-            "APPROVED"
-            if scores.total_score >= 75
-            else "CONDITIONAL" if scores.total_score >= 65 else "NOT APPROVED"
-        )
+        status_class = "approved" if scores.total_score >= 75 else "warning" if scores.total_score >= 65 else "rejected"
+        status_text = "APPROVED" if scores.total_score >= 75 else "CONDITIONAL" if scores.total_score >= 65 else "NOT APPROVED"
 
         # Calculate net return if costs available
         net_return_section = ""
         if costs:
-            net_return = backtest.annualized_return - (
-                costs["total_costs"]["total_annual_drag_pct"] / 100
-            )
+            net_return = backtest.annualized_return - (costs["total_costs"]["total_annual_drag_pct"] / 100)
             net_return_section = f"""
                 <div class="metric">
                     <div class="metric-label">Net Return (After Costs)</div>
@@ -233,7 +213,7 @@ class ReportGenerator:
                     <div class="summary-value">{status_text}</div>
                     <div class="summary-subtitle">Overall Score: {scores.total_score:.1f}/100 ({grade})</div>
                 </div>
-                
+
                 <div class="metrics-grid">
                     <div class="metric">
                         <div class="metric-label">Total Return</div>
@@ -261,9 +241,7 @@ class ReportGenerator:
         </div>
         """
 
-    def _generate_metrics_table(
-        self, backtest: BacktestResult, scores: ComponentScores
-    ) -> str:
+    def _generate_metrics_table(self, backtest: BacktestResult, scores: ComponentScores) -> str:
         """Generate detailed metrics table."""
 
         return f"""
@@ -371,7 +349,7 @@ class ReportGenerator:
                     <div class="score-grade">{grade}</div>
                 </div>
             </div>
-            
+
             <div class="score-components">
                 <div class="component">
                     <div class="component-header">
@@ -387,7 +365,7 @@ class ReportGenerator:
                         <div>Win Rate: {scores.win_rate_score:.1f}/10</div>
                     </div>
                 </div>
-                
+
                 <div class="component">
                     <div class="component-header">
                         <h3>Risk Management</h3>
@@ -402,7 +380,7 @@ class ReportGenerator:
                         <div>Recovery: {scores.recovery_score:.1f}/5</div>
                     </div>
                 </div>
-                
+
                 <div class="component">
                     <div class="component-header">
                         <h3>Execution Quality</h3>
@@ -417,7 +395,7 @@ class ReportGenerator:
                         <div>Slippage: {scores.slippage_score:.1f}/5</div>
                     </div>
                 </div>
-                
+
                 <div class="component">
                     <div class="component-header">
                         <h3>Robustness</h3>
@@ -497,9 +475,7 @@ class ReportGenerator:
         running_max = equity.cummax()
         drawdown = (equity - running_max) / running_max
 
-        ax.fill_between(
-            drawdown.index, 0, drawdown.values * 100, color="#EE5A6F", alpha=0.3
-        )
+        ax.fill_between(drawdown.index, 0, drawdown.values * 100, color="#EE5A6F", alpha=0.3)
         ax.plot(drawdown.index, drawdown.values * 100, linewidth=2, color="#EE5A6F")
 
         ax.set_title("Drawdown Analysis", fontsize=14, fontweight="bold")
@@ -573,9 +549,7 @@ class ReportGenerator:
         monthly_returns = backtest.returns.resample("M").sum() * 100
 
         colors = ["#26DE81" if r > 0 else "#EE5A6F" for r in monthly_returns]
-        ax.bar(
-            range(len(monthly_returns)), monthly_returns.values, color=colors, alpha=0.7
-        )
+        ax.bar(range(len(monthly_returns)), monthly_returns.values, color=colors, alpha=0.7)
 
         ax.set_title("Monthly Returns", fontsize=14, fontweight="bold")
         ax.set_xlabel("Month")
@@ -585,9 +559,7 @@ class ReportGenerator:
 
         # Set x-tick labels to month names
         ax.set_xticks(range(len(monthly_returns)))
-        ax.set_xticklabels(
-            [d.strftime("%Y-%m") for d in monthly_returns.index], rotation=45
-        )
+        ax.set_xticklabels([d.strftime("%Y-%m") for d in monthly_returns.index], rotation=45)
 
         plt.tight_layout()
 
@@ -620,11 +592,7 @@ class ReportGenerator:
 
         total_shown = len(trades)
         total_trades = len(backtest.trades)
-        note = (
-            f"<p><em>Showing {total_shown} of {total_trades} trades</em></p>"
-            if total_trades > total_shown
-            else ""
-        )
+        note = f"<p><em>Showing {total_shown} of {total_trades} trades</em></p>" if total_trades > total_shown else ""
 
         return f"""
         <div class="section">
@@ -653,9 +621,7 @@ class ReportGenerator:
         </div>
         """
 
-    def _generate_recommendations(
-        self, backtest: BacktestResult, scores: ComponentScores
-    ) -> str:
+    def _generate_recommendations(self, backtest: BacktestResult, scores: ComponentScores) -> str:
         """Generate actionable recommendations."""
 
         recommendations = []
@@ -666,7 +632,7 @@ class ReportGenerator:
                 {
                     "type": "warning",
                     "title": "Low Sharpe Ratio",
-                    "message": f"Current Sharpe ratio ({backtest.sharpe_ratio:.2f}) is below target (1.5). Consider improving risk-adjusted returns by reducing volatility or increasing average returns.",
+                    "message": (f"Current Sharpe ratio ({backtest.sharpe_ratio:.2f}) is below " "target (1.5). Consider improving risk-adjusted returns by " "reducing volatility or increasing average returns."),
                 }
             )
 
@@ -752,7 +718,7 @@ class ReportGenerator:
                 {
                     "type": "success",
                     "title": "Approved for Deployment",
-                    "message": f"Strategy passed validation with score {scores.total_score:.1f}/100. Ready for live trading with recommended position size of {2.0 * (scores.total_score / 100):.2%}.",
+                    "message": (f"Strategy passed validation with score " f"{scores.total_score:.1f}/100. Ready for live trading with " f"recommended position size of {2.0 * (scores.total_score / 100):.2%}."),
                 },
             )
         elif scores.total_score >= 65:
@@ -761,7 +727,7 @@ class ReportGenerator:
                 {
                     "type": "warning",
                     "title": "Conditional Approval",
-                    "message": f"Strategy conditionally approved with score {scores.total_score:.1f}/100. Start with reduced position size ({1.0 * (scores.total_score / 100):.2%}) and monitor closely for 30 days.",
+                    "message": (f"Strategy conditionally approved with score " f"{scores.total_score:.1f}/100. Start with reduced position " "size " f"({1.0 * (scores.total_score / 100):.2%}) and monitor " "closely for 30 days."),
                 },
             )
         else:
@@ -798,7 +764,7 @@ class ReportGenerator:
 
     def _generate_footer(self) -> str:
         """Generate report footer."""
-        return f"""
+        return """
         <div class="footer">
             <p>Generated by ExhaustionLab Validation Framework v2.0</p>
             <p><em>This report is for informational purposes only and does not constitute investment advice.</em></p>
@@ -851,20 +817,20 @@ class ReportGenerator:
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             line-height: 1.6;
             color: #333;
             background: #f5f7fa;
         }
-        
+
         .container {
             max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
         }
-        
+
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -872,19 +838,19 @@ class ReportGenerator:
             border-radius: 10px;
             margin-bottom: 30px;
         }
-        
+
         .header h1 {
             font-size: 32px;
             margin-bottom: 15px;
         }
-        
+
         .header-info {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 10px;
             font-size: 14px;
         }
-        
+
         .section {
             background: white;
             padding: 30px;
@@ -892,7 +858,7 @@ class ReportGenerator:
             margin-bottom: 30px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        
+
         .section h2 {
             font-size: 24px;
             margin-bottom: 20px;
@@ -900,114 +866,114 @@ class ReportGenerator:
             border-bottom: 3px solid #667eea;
             padding-bottom: 10px;
         }
-        
+
         .section h3 {
             font-size: 18px;
             margin: 15px 0 10px 0;
             color: #34495e;
         }
-        
+
         .summary-grid {
             display: grid;
             grid-template-columns: 300px 1fr;
             gap: 20px;
         }
-        
+
         .summary-card {
             padding: 30px;
             border-radius: 10px;
             text-align: center;
         }
-        
+
         .summary-card.approved {
             background: linear-gradient(135deg, #26DE81 0%, #20BF6B 100%);
             color: white;
         }
-        
+
         .summary-card.warning {
             background: linear-gradient(135deg, #FED330 0%, #F7B731 100%);
             color: #333;
         }
-        
+
         .summary-card.rejected {
             background: linear-gradient(135deg, #EE5A6F 0%, #FC5C65 100%);
             color: white;
         }
-        
+
         .summary-title {
             font-size: 14px;
             text-transform: uppercase;
             margin-bottom: 10px;
             opacity: 0.9;
         }
-        
+
         .summary-value {
             font-size: 32px;
             font-weight: bold;
             margin-bottom: 10px;
         }
-        
+
         .summary-subtitle {
             font-size: 16px;
             opacity: 0.9;
         }
-        
+
         .metrics-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 15px;
         }
-        
+
         .metric {
             background: #f8f9fa;
             padding: 15px;
             border-radius: 8px;
             text-align: center;
         }
-        
+
         .metric-label {
             font-size: 12px;
             color: #6c757d;
             text-transform: uppercase;
             margin-bottom: 8px;
         }
-        
+
         .metric-value {
             font-size: 24px;
             font-weight: bold;
             color: #2c3e50;
         }
-        
+
         .metric-value.positive {
             color: #26DE81;
         }
-        
+
         .metric-value.negative {
             color: #EE5A6F;
         }
-        
+
         .metrics-table {
             width: 100%;
             border-collapse: collapse;
         }
-        
+
         .metrics-table th,
         .metrics-table td {
             padding: 12px;
             text-align: left;
             border-bottom: 1px solid #e9ecef;
         }
-        
+
         .metrics-table th {
             background: #f8f9fa;
             font-weight: 600;
             color: #495057;
         }
-        
+
         .metrics-table tr:hover {
             background: #f8f9fa;
         }
-        
+
         .badge {
             display: inline-block;
             padding: 4px 8px;
@@ -1015,22 +981,22 @@ class ReportGenerator:
             font-size: 12px;
             font-weight: bold;
         }
-        
+
         .badge.success {
             background: #26DE81;
             color: white;
         }
-        
+
         .badge.warning {
             background: #FED330;
             color: #333;
         }
-        
+
         .score-summary {
             text-align: center;
             margin-bottom: 30px;
         }
-        
+
         .total-score {
             display: inline-block;
             padding: 30px;
@@ -1038,48 +1004,48 @@ class ReportGenerator:
             color: white;
             border-radius: 10px;
         }
-        
+
         .score-label {
             font-size: 14px;
             text-transform: uppercase;
             margin-bottom: 10px;
         }
-        
+
         .score-value {
             font-size: 48px;
             font-weight: bold;
             margin-bottom: 5px;
         }
-        
+
         .score-grade {
             font-size: 20px;
         }
-        
+
         .score-components {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 20px;
         }
-        
+
         .component {
             padding: 20px;
             background: #f8f9fa;
             border-radius: 8px;
         }
-        
+
         .component-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
         }
-        
+
         .component-score {
             font-size: 20px;
             font-weight: bold;
             color: #667eea;
         }
-        
+
         .progress-bar {
             height: 8px;
             background: #dee2e6;
@@ -1087,125 +1053,125 @@ class ReportGenerator:
             overflow: hidden;
             margin-bottom: 15px;
         }
-        
+
         .progress-fill {
             height: 100%;
             background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
             transition: width 0.3s;
         }
-        
+
         .sub-metrics {
             font-size: 14px;
             color: #6c757d;
         }
-        
+
         .sub-metrics div {
             padding: 5px 0;
         }
-        
+
         .chart-container {
             margin: 30px 0;
         }
-        
+
         .chart-container img {
             width: 100%;
             height: auto;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-        
+
         .table-container {
             overflow-x: auto;
         }
-        
+
         .trade-journal {
             width: 100%;
             border-collapse: collapse;
             font-size: 14px;
         }
-        
+
         .trade-journal th,
         .trade-journal td {
             padding: 10px;
             text-align: left;
             border-bottom: 1px solid #e9ecef;
         }
-        
+
         .trade-journal th {
             background: #f8f9fa;
             font-weight: 600;
             position: sticky;
             top: 0;
         }
-        
+
         .trade-journal tr:hover {
             background: #f8f9fa;
         }
-        
+
         .trade-journal td.positive {
             color: #26DE81;
             font-weight: 600;
         }
-        
+
         .trade-journal td.negative {
             color: #EE5A6F;
             font-weight: 600;
         }
-        
+
         .recommendations {
             display: grid;
             gap: 15px;
         }
-        
+
         .recommendation {
             padding: 20px;
             border-radius: 8px;
             border-left: 4px solid;
         }
-        
+
         .recommendation.success {
             background: #d4edda;
             border-color: #26DE81;
         }
-        
+
         .recommendation.warning {
             background: #fff3cd;
             border-color: #FED330;
         }
-        
+
         .recommendation.error {
             background: #f8d7da;
             border-color: #EE5A6F;
         }
-        
+
         .recommendation.info {
             background: #d1ecf1;
             border-color: #2E86DE;
         }
-        
+
         .rec-title {
             font-size: 16px;
             font-weight: bold;
             margin-bottom: 8px;
         }
-        
+
         .rec-message {
             font-size: 14px;
             line-height: 1.6;
         }
-        
+
         .footer {
             text-align: center;
             padding: 20px;
             color: #6c757d;
             font-size: 14px;
         }
-        
+
         @media print {
             .container {
                 max-width: 100%;
             }
-            
+
             .section {
                 page-break-inside: avoid;
             }

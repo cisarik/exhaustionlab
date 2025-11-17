@@ -60,25 +60,25 @@ Top 3 with Code:
 
 1. **Parse indicators from Pine Script** ✅
    - Extracts RSI, MACD, EMA, SMA from code
-   
+
 2. **Extract features from strategy** ✅
    - Detects stop_loss, take_profit, trailing_stop, etc.
-   
+
 3. **Save strategy to database** ✅
    - SQLite persistence with full metadata
-   
+
 4. **Search strategies by quality** ✅
    - Filter by minimum quality score
-   
+
 5. **Search strategies by platform** ✅
    - Filter by GitHub/TradingView
-   
+
 6. **Get strategies with code** ✅
    - Filter has_code = true
-   
+
 7. **Extract top quality strategies** ✅
    - Sorted by quality score descending
-   
+
 8. **Calculate quality score components** ✅
    - Source, code, performance, community scoring
 
@@ -86,22 +86,22 @@ Top 3 with Code:
 
 1. **Extract strategy from GitHub repository** ⚠️
    - Requires GitHub API (rate limited)
-   
+
 2. **Extract Pine Script code from repository** ⚠️
    - Requires GitHub API (rate limited)
-   
+
 3. **Extract README documentation** ⚠️
    - Requires GitHub API (rate limited)
-   
+
 4. **Parse parameters from Pine Script** ⚠️
    - Input parameter regex needs improvement
-   
+
 5. **Database statistics** ⚠️
    - Test expects 50 but uses temporary DB
-   
+
 6. **Batch extraction** ⚠️
    - Depends on GitHub API
-   
+
 7. **Handle extraction errors gracefully** ⚠️
    - Missing step definition for "failed" status
 
@@ -223,51 +223,51 @@ class Strategy(Base):
     id = String(32) PRIMARY KEY
     name = String(255) NOT NULL
     platform = String(50) NOT NULL  # github, tradingview
-    
+
     # Code
     pine_code = Text
     python_code = Text
     code_language = String(50)
-    
+
     # Documentation
     description = Text
     readme = Text
     documentation = Text
-    
+
     # Metadata
     parameters = JSON
     indicators_used = JSON
     features = JSON
     timeframes = JSON
-    
+
     # Performance
     backtest_metrics = JSON
     sharpe_ratio = Float
     max_drawdown = Float
     win_rate = Float
-    
+
     # Community
     stars = Integer
     forks = Integer
     watchers = Integer
     upvotes = Integer
-    
+
     # Quality
     quality_score = Float (0-100)
     quality_category = String(50)  # Excellent, Good, Average, Poor
     has_code = Boolean
     has_documentation = Boolean
     has_tests = Boolean
-    
+
     # Code Metrics
     lines_of_code = Integer
     complexity_score = Float
-    
+
     # Timestamps
     created_at = DateTime
     updated_at = DateTime
     extracted_at = DateTime
-    
+
     # Classification
     tags = JSON
     category = String(100)
@@ -354,7 +354,7 @@ Top Quality: algo_trading_weighted_strategy (67.6)
 
 **Problem**: SQLite cannot store Python lists directly in columns.
 
-**Solution**: 
+**Solution**:
 ```python
 # Before save
 if isinstance(extraction_notes, list):
@@ -395,12 +395,12 @@ session.commit()  # ✅ strategy in same session
 1. **Fix Parameter Parsing** (1 hour)
    - Improve regex for `input.int()`, `input.float()`, `input.source()`
    - Add test cases for various input formats
-   
+
 2. **Add GitHub Token Support** (30 min)
    - Environment variable: `GITHUB_TOKEN`
    - Increase rate limit to 5000 req/hour
    - Extract from top 100 repos
-   
+
 3. **Mock GitHub API in Tests** (2 hours)
    - Use `pytest-mock` or `responses` library
    - Create fixtures with sample responses
@@ -413,7 +413,7 @@ session.commit()  # ✅ strategy in same session
    # Load examples for LLM context
    strategies = db.search(has_code=True, min_quality_score=60, limit=5)
    examples = [s.pine_code for s in strategies]
-   
+
    # Build enhanced prompt
    prompt = build_prompt_with_examples(examples)
    ```
@@ -571,7 +571,7 @@ From requirements to tests to implementation:
 1. **Adding New Strategies**:
    ```python
    from exhaustionlab.app.meta_evolution.strategy_database import StrategyDatabase
-   
+
    db = StrategyDatabase()
    strategy = {
        'name': 'My Strategy',
@@ -598,10 +598,10 @@ From requirements to tests to implementation:
    ```bash
    # All tests
    poetry run pytest tests/bdd/ -v
-   
+
    # Specific scenario
    poetry run pytest tests/bdd/ -k "save_strategy"
-   
+
    # With coverage
    poetry run pytest tests/bdd/ --cov=exhaustionlab.app.meta_evolution
    ```
@@ -611,7 +611,7 @@ From requirements to tests to implementation:
 1. **Export Strategies for Analysis**:
    ```python
    import pandas as pd
-   
+
    strategies = db.search(has_code=True, limit=100)
    data = [s.to_dict() for s in strategies]
    df = pd.DataFrame(data)
@@ -621,12 +621,12 @@ From requirements to tests to implementation:
 2. **Analyze Indicators**:
    ```python
    from collections import Counter
-   
+
    all_indicators = []
    for s in db.search(has_code=True, limit=100):
        if s.indicators_used:
            all_indicators.extend(s.indicators_used)
-   
+
    counter = Counter(all_indicators)
    print("Most popular indicators:")
    for indicator, count in counter.most_common(10):
@@ -636,10 +636,10 @@ From requirements to tests to implementation:
 3. **Quality Distribution**:
    ```python
    import matplotlib.pyplot as plt
-   
+
    strategies = db.search(limit=100)
    scores = [s.quality_score for s in strategies]
-   
+
    plt.hist(scores, bins=20)
    plt.xlabel('Quality Score')
    plt.ylabel('Frequency')
@@ -657,12 +657,12 @@ From requirements to tests to implementation:
 2. **Filter by Indicators**:
    ```python
    strategies = db.search(min_quality_score=60, limit=100)
-   
+
    # Find strategies using RSI + MACD
    rsi_macd = [
-       s for s in strategies 
-       if s.indicators_used 
-       and 'RSI' in s.indicators_used 
+       s for s in strategies
+       if s.indicators_used
+       and 'RSI' in s.indicators_used
        and 'MACD' in s.indicators_used
    ]
    ```
@@ -748,26 +748,26 @@ poetry run python migrate_knowledge_base.py
 
 ### Summary of Achievements:
 
-✅ **53 strategies** in database (exceeds target of 20-100)  
-✅ **12 strategies with code** (2,728 LOC total)  
-✅ **15 BDD scenarios** implemented  
-✅ **53% test pass rate** with real data  
-✅ **SQLite database** with 40+ fields  
-✅ **Direct extraction** bypasses API limits  
-✅ **Quality scoring** 0-100 algorithm  
+✅ **53 strategies** in database (exceeds target of 20-100)
+✅ **12 strategies with code** (2,728 LOC total)
+✅ **15 BDD scenarios** implemented
+✅ **53% test pass rate** with real data
+✅ **SQLite database** with 40+ fields
+✅ **Direct extraction** bypasses API limits
+✅ **Quality scoring** 0-100 algorithm
 ✅ **10,000+ lines** of documentation
 
 ### Ready For:
 
-🚀 **LLM Training**: Examples for strategy generation  
-🚀 **Production Testing**: BDD scenarios validated  
-🚀 **Research**: Complete metadata for analysis  
+🚀 **LLM Training**: Examples for strategy generation
+🚀 **Production Testing**: BDD scenarios validated
+🚀 **Research**: Complete metadata for analysis
 🚀 **Expansion**: Add more sources and strategies
 
 ---
 
-**ExhaustionLab v2.0.0** - Behaviour-Driven Development Implementation  
-*Date: 2025-11-15*  
+**ExhaustionLab v2.0.0** - Behaviour-Driven Development Implementation
+*Date: 2025-11-15*
 *Status: ✅ COMPLETE & OPERATIONAL*
 
 ---

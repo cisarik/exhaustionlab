@@ -13,12 +13,12 @@ Comprehensive profit analysis with:
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass
 from enum import Enum
+from typing import Dict, Optional, Tuple
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 from scipy import stats
 
 logger = logging.getLogger(__name__)
@@ -218,9 +218,7 @@ class ProfitAnalyzer:
 
         # Overall profitability
         total_return = (equity_curve.iloc[-1] / equity_curve.iloc[0]) - 1.0
-        annualized_return = self._annualize_return(
-            total_return, len(returns), trading_days
-        )
+        annualized_return = self._annualize_return(total_return, len(returns), trading_days)
         cagr = self._calculate_cagr(equity_curve, trading_days)
 
         # Return distribution
@@ -236,21 +234,13 @@ class ProfitAnalyzer:
         # Calculate weekly/monthly if enough data
         if len(returns) > 30:
             weekly_returns = returns.resample("W").sum()
-            profitable_weeks = (
-                (weekly_returns > 0).sum() / len(weekly_returns)
-                if len(weekly_returns) > 0
-                else 0
-            )
+            profitable_weeks = (weekly_returns > 0).sum() / len(weekly_returns) if len(weekly_returns) > 0 else 0
         else:
             profitable_weeks = profitable_days
 
         if len(returns) > 90:
             monthly_returns = returns.resample("M").sum()
-            profitable_months = (
-                (monthly_returns > 0).sum() / len(monthly_returns)
-                if len(monthly_returns) > 0
-                else 0
-            )
+            profitable_months = (monthly_returns > 0).sum() / len(monthly_returns) if len(monthly_returns) > 0 else 0
         else:
             profitable_months = profitable_days
 
@@ -402,9 +392,7 @@ class ProfitAnalyzer:
             profit_kurtosis=profit_kurt,
         )
 
-    def _annualize_return(
-        self, total_return: float, periods: int, trading_days: int
-    ) -> float:
+    def _annualize_return(self, total_return: float, periods: int, trading_days: int) -> float:
         """Annualize return."""
         if periods == 0:
             return 0
@@ -454,9 +442,7 @@ class ProfitAnalyzer:
         sortino = excess_returns.mean() / downside_std * np.sqrt(trading_days)
         return sortino
 
-    def _calculate_calmar(
-        self, equity_curve: pd.Series, annualized_return: float
-    ) -> float:
+    def _calculate_calmar(self, equity_curve: pd.Series, annualized_return: float) -> float:
         """Calculate Calmar ratio (return / max drawdown)."""
         if len(equity_curve) < 2:
             return 0
@@ -482,9 +468,7 @@ class ProfitAnalyzer:
         omega = gains / losses
         return omega
 
-    def _test_statistical_significance(
-        self, returns: pd.Series, trading_days: int
-    ) -> Tuple[float, float]:
+    def _test_statistical_significance(self, returns: pd.Series, trading_days: int) -> Tuple[float, float]:
         """Test if returns are statistically significant (t-test)."""
         if len(returns) < 2:
             return 0, 1.0
@@ -494,9 +478,7 @@ class ProfitAnalyzer:
 
         return t_stat, p_value
 
-    def _calculate_return_ci(
-        self, returns: pd.Series, trading_days: int
-    ) -> Tuple[float, float]:
+    def _calculate_return_ci(self, returns: pd.Series, trading_days: int) -> Tuple[float, float]:
         """Calculate confidence interval for returns."""
         if len(returns) < 2:
             return (0, 0)

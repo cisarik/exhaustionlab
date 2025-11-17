@@ -32,21 +32,30 @@ matplotlib = "^3.8.0"
 pillow = "^10.0.0"
 cryptography = "^42.0.0"
 scipy = "^1.11.0"
+pydantic = "^2.5.0"
+pydantic-settings = "^2.0.0"
+prometheus-client = "^0.19.0"
+loguru = "^0.7.0"
 
 [tool.poetry.extras]
 pynecore = ["pynesys-pynecore"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.0"
+pytest-cov = "^6.0.0"
+pytest-xdist = "^3.6.1"
 black = "^24.8.0"
 ruff = "^0.6.0"
 httpx = "^0.27.0"
+pre-commit = "^4.0.1"
+isort = "^5.13.2"
+bandit = "^1.7.10"
 
 [tool.poetry.scripts]
 exhaustionlab-webui = "exhaustionlab.webui.server:main"
 
 [tool.ruff]
-line-length = 100
+line-length = 240
 target-version = "py311"
 src = ["exhaustionlab", "tests"]
 exclude = [
@@ -60,6 +69,7 @@ exclude = [
   "evolved_strategies",
   "data",
   "scripts/pyne",
+  "examples",
   # root-level demo/integration scripts
   "test_*.py",
   "migrate_knowledge_base.py",
@@ -72,6 +82,78 @@ select = ["E", "F", "I"]
 "tests/**" = ["E402", "F401", "F841", "F541", "E741", "E722", "E712"]
 "tests/bdd/**" = ["E402", "F541", "E722"]
 "exhaustionlab/app/llm/llm_client.py" = ["F821"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--showlocals",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "bdd: marks tests as BDD tests",
+]
+
+[tool.black]
+line-length = 240
+target-version = ["py311"]
+
+[tool.coverage.run]
+source = ["exhaustionlab"]
+branch = true
+parallel = true
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+    "*/site-packages/*",
+    ".venv/*",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+    "@abc.abstractmethod",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
+[tool.isort]
+profile = "black"
+line_length = 240
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+skip_glob = [
+    ".venv/*",
+    "build/*",
+    "dist/*",
+]
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", "build"]
+skips = ["B101", "B601"]
 
 [build-system]
 requires = ["poetry-core"]

@@ -10,8 +10,8 @@ Tests the complete workflow:
 5. Compare quality
 """
 
-import sys
 import logging
+import sys
 from pathlib import Path
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(message)s")
@@ -20,10 +20,7 @@ logger = logging.getLogger(__name__)
 # Add to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from exhaustionlab.app.llm.enhanced_prompts import (
-    EnhancedPromptBuilder,
-    create_enhanced_strategy_prompt,
-)
+from exhaustionlab.app.llm.enhanced_prompts import EnhancedPromptBuilder, create_enhanced_strategy_prompt
 from exhaustionlab.app.llm.llm_client import LocalLLMClient
 from exhaustionlab.app.llm.prompts import PromptContext
 
@@ -55,9 +52,7 @@ def test_prompt_generation():
         risk_profile="balanced",
     )
 
-    prompt = builder.build_strategy_prompt(
-        context, include_examples=True, num_examples=2
-    )
+    prompt = builder.build_strategy_prompt(context, include_examples=True, num_examples=2)
 
     logger.info(f"  ✅ Prompt generated: {len(prompt)} chars")
     logger.info(f"  Contains real examples: {'REAL STRATEGY EXAMPLES' in prompt}")
@@ -219,9 +214,7 @@ def compare_with_examples():
         logger.info(f"\n{i}. {s.name}")
         logger.info(f"   Quality: {s.quality_score:.1f}")
         logger.info(f"   LOC: {s.lines_of_code}")
-        logger.info(
-            f"   Indicators: {', '.join(s.indicators_used) if s.indicators_used else 'N/A'}"
-        )
+        logger.info(f"   Indicators: {', '.join(s.indicators_used) if s.indicators_used else 'N/A'}")
 
 
 def main():
@@ -253,12 +246,8 @@ def main():
         logger.info(f"\n📊 Summary:")
         logger.info(f"  ✅ Enhanced prompts: WORKING")
         logger.info(f"  ✅ Database examples: 12 strategies")
-        logger.info(
-            f"  {'✅' if llm_connected else '⚠️'} LLM connection: {'CONNECTED' if llm_connected else 'NOT AVAILABLE'}"
-        )
-        logger.info(
-            f"  {'✅' if response else '⏭️'} Strategy generation: {'SUCCESS' if response else 'SKIPPED'}"
-        )
+        logger.info(f"  {'✅' if llm_connected else '⚠️'} LLM connection: {'CONNECTED' if llm_connected else 'NOT AVAILABLE'}")
+        logger.info(f"  {'✅' if response else '⏭️'} Strategy generation: {'SUCCESS' if response else 'SKIPPED'}")
 
         if not llm_connected:
             logger.info(f"\n💡 To enable full testing:")

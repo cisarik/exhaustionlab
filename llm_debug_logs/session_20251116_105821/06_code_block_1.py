@@ -1,4 +1,4 @@
-from pynecore import script, input, plot, color, Series
+from pynecore import Series, color, input, plot, script
 
 
 @script.indicator(title="RSI & SMA Momentum Strategy", overlay=True)

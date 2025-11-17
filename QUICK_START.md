@@ -6,10 +6,10 @@
 
 ## TL;DR
 
-**Project:** AI-driven crypto trading platform, 75% complete  
-**Location:** `/home/agile/ExhaustionLab/`  
-**Status:** Core working, meta-evolution 80% done, needs web crawler + validator completion  
-**Time to Complete:** 4-6 hours focused work  
+**Project:** AI-driven crypto trading platform, 75% complete
+**Location:** `/home/agile/ExhaustionLab/`
+**Status:** Core working, meta-evolution 80% done, needs web crawler + validator completion
+**Time to Complete:** 4-6 hours focused work
 **Language:** Python 3.11+ with Poetry
 
 ---
@@ -110,10 +110,10 @@ def _search_github(self, query: str, limit: int = 20) -> List[ExtractedContent]:
 def generate_intelligent_strategy(self, directive: EvolutionDirective):
     # Load web examples
     examples = self.load_web_examples(directive.strategy_type, limit=5)
-    
+
     # Add to prompt context
     context.example_strategies = examples
-    
+
     # Generate with enhanced prompt
     result = self.llm_client.generate(enhanced_prompt)
 ```
@@ -341,7 +341,7 @@ You're done when:
 # 1. Read HANDOFF_SUMMARY.md (5 min)
 less HANDOFF_SUMMARY.md
 
-# 2. Read CODING_AGENT_PROMPT.md (15 min)  
+# 2. Read CODING_AGENT_PROMPT.md (15 min)
 less CODING_AGENT_PROMPT.md
 
 # 3. Install dependencies

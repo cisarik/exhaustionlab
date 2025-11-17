@@ -1,0 +1,240 @@
+---
+# ============================================================================
+# ExhaustionLab v3.0 - Docker Compose Configuration
+# ============================================================================
+# Production-ready stack with:
+# - Web UI service
+# - PostgreSQL database
+# - Health checks
+# - Resource limits
+# - Monitoring endpoints
+# ============================================================================
+
+version: "3.9"
+
+services:
+  # --------------------------------------------------------------------------
+  # Web UI Service - FastAPI + Evolution Engine
+  # --------------------------------------------------------------------------
+  webui:
+    build:
+      context: .
+      target: runtime
+      args:
+        POETRY_VERSION: 1.8.3
+    image: exhaustionlab:3.0.0
+    container_name: exhaustionlab-webui
+    restart: unless-stopped
+
+    # Environment configuration
+    env_file: .env
+    environment:
+      # Application settings
+      APP_ENV: ${APP_ENV:-production}
+      WEBUI_PORT: ${WEBUI_PORT:-8080}
+
+      # Database connection
+      DB_PATH: /workspace/data/strategies.db
+
+      # Logging
+      OBSERVABILITY_LOG_FORMAT: json
+      OBSERVABILITY_LOG_FILE: /workspace/logs/app.log
+
+      # Metrics
+      OBSERVABILITY_METRICS_ENABLED: "true"
+      OBSERVABILITY_METRICS_PORT: 9090
+
+    # Port mappings
+    ports:
+      - "${WEBUI_PORT:-8080}:8080"      # Web UI
+      - "${METRICS_PORT:-9090}:9090"     # Prometheus metrics
+
+    # Volumes
+    volumes:
+      - ./.env:/app/.env:ro
+      - ./data:/workspace/data
+      - ./logs:/workspace/logs
+      - ./evolved_strategies:/workspace/evolved_strategies
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2g
+        reservations:
+          cpus: "0.5"
+          memory: 512m
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Dependencies
+    depends_on:
+      db:
+        condition: service_healthy
+
+    # Network
+    networks:
+      - exhaustionlab-net
+
+  # --------------------------------------------------------------------------
+  # PostgreSQL Database (Optional - for advanced features)
+  # --------------------------------------------------------------------------
+  db:
+    image: postgres:15-alpine
+    container_name: exhaustionlab-db
+    restart: unless-stopped
+
+    # Environment
+    environment:
+      POSTGRES_USER: ${DB_USER:-exhaustionlab}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-exhaustionlab}
+      POSTGRES_DB: ${DB_NAME:-exhaustionlab}
+      PGDATA: /var/lib/postgresql/data/pgdata
+
+    # Volumes
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+    # Ports (only expose if needed for external access)
+    # ports:
+    #   - "5432:5432"
+
+    # Health check
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-exhaustionlab}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1g
+        reservations:
+          cpus: "0.25"
+          memory: 256m
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Network
+    networks:
+      - exhaustionlab-net
+
+  # --------------------------------------------------------------------------
+  # Prometheus (Optional - for monitoring)
+  # --------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: exhaustionlab-prometheus
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+    # Command
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+
+    # Volumes
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+
+    # Ports
+    ports:
+      - "9091:9090"
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    # Dependencies
+    depends_on:
+      - webui
+
+    # Network
+    networks:
+      - exhaustionlab-net
+
+  # --------------------------------------------------------------------------
+  # Grafana (Optional - for dashboards)
+  # --------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:latest
+    container_name: exhaustionlab-grafana
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+    # Environment
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_INSTALL_PLUGINS: grafana-clock-panel
+
+    # Volumes
+    volumes:
+      - grafana_data:/var/lib/grafana
+
+    # Ports
+    ports:
+      - "3000:3000"
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    # Dependencies
+    depends_on:
+      - prometheus
+
+    # Network
+    networks:
+      - exhaustionlab-net
+
+# ============================================================================
+# Networks
+# ============================================================================
+networks:
+  exhaustionlab-net:
+    driver: bridge
+    name: exhaustionlab-network
+
+# ============================================================================
+# Volumes
+# ============================================================================
+volumes:
+  db_data:
+    name: exhaustionlab-db-data
+  prometheus_data:
+    name: exhaustionlab-prometheus-data
+  grafana_data:
+    name: exhaustionlab-grafana-data

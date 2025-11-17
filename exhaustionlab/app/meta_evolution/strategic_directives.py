@@ -10,17 +10,17 @@ Intelligent meta-evolution orchestration that:
 
 from __future__ import annotations
 
+import json
 import logging
-from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from enum import Enum
-import json
+from typing import Any, Dict, List, Optional, Tuple
 
 try:
-    from .performance_metrics import PerformanceMetrics, calculate_comprehensive_metrics
+    from .performance_metrics import PerformanceMetrics
 except ImportError:
-    from performance_metrics import PerformanceMetrics, calculate_comprehensive_metrics
+    from performance_metrics import PerformanceMetrics
 
 
 logger = logging.getLogger(__name__)
@@ -69,29 +69,19 @@ class PerformanceTarget:
         failures = []
 
         if metrics.sharpe_ratio < self.min_sharpe_ratio:
-            failures.append(
-                f"Sharpe {metrics.sharpe_ratio:.2f} < target {self.min_sharpe_ratio}"
-            )
+            failures.append(f"Sharpe {metrics.sharpe_ratio:.2f} < target {self.min_sharpe_ratio}")
 
         if abs(metrics.max_drawdown) > self.max_drawdown:
-            failures.append(
-                f"Drawdown {abs(metrics.max_drawdown):.2%} > target {self.max_drawdown:.2%}"
-            )
+            failures.append(f"Drawdown {abs(metrics.max_drawdown):.2%} > target {self.max_drawdown:.2%}")
 
         if metrics.win_rate < self.min_win_rate and metrics.total_trades > 0:
-            failures.append(
-                f"Win rate {metrics.win_rate:.1%} < target {self.min_win_rate:.1%}"
-            )
+            failures.append(f"Win rate {metrics.win_rate:.1%} < target {self.min_win_rate:.1%}")
 
         if metrics.profit_factor < self.min_profit_factor and metrics.total_trades > 0:
-            failures.append(
-                f"Profit factor {metrics.profit_factor:.2f} < target {self.min_profit_factor}"
-            )
+            failures.append(f"Profit factor {metrics.profit_factor:.2f} < target {self.min_profit_factor}")
 
         if metrics.volatility > self.max_volatility:
-            failures.append(
-                f"Volatility {metrics.volatility:.2%} > target {self.max_volatility:.2%}"
-            )
+            failures.append(f"Volatility {metrics.volatility:.2%} > target {self.max_volatility:.2%}")
 
         return len(failures) == 0, failures
 
@@ -122,9 +112,7 @@ class StrategicDirective:
 
     # Strategy Parameters
     preferred_indicators: List[str] = field(default_factory=list)
-    strategy_types: List[str] = field(
-        default_factory=lambda: ["momentum", "trend_following"]
-    )
+    strategy_types: List[str] = field(default_factory=lambda: ["momentum", "trend_following"])
     risk_profile: str = "balanced"  # "conservative", "balanced", "aggressive"
 
     # Constraints
@@ -241,9 +229,7 @@ class AdaptiveDirectiveManager:
 
         return directive
 
-    def update_from_performance(
-        self, directive_id: str, metrics: PerformanceMetrics, code_complexity: int = 0
-    ):
+    def update_from_performance(self, directive_id: str, metrics: PerformanceMetrics, code_complexity: int = 0):
         """
         Update directive based on strategy performance.
 
@@ -267,9 +253,7 @@ class AdaptiveDirectiveManager:
 
         if meets_targets:
             directive.successes += 1
-            self.logger.info(
-                f"✅ Directive {directive_id}: Success! ({directive.successes}/{directive.attempts})"
-            )
+            self.logger.info(f"✅ Directive {directive_id}: Success! ({directive.successes}/{directive.attempts})")
         else:
             self.logger.info(f"⚠️ Directive {directive_id}: Failed targets: {failures}")
 
@@ -285,9 +269,7 @@ class AdaptiveDirectiveManager:
         # Adaptive learning
         self._adapt_directive(directive, metrics, meets_targets)
 
-    def _customize_for_objective(
-        self, directive: StrategicDirective, objective: StrategyObjective
-    ):
+    def _customize_for_objective(self, directive: StrategicDirective, objective: StrategyObjective):
         """Customize directive parameters based on objective."""
 
         if objective == StrategyObjective.MAXIMIZE_RETURNS:
@@ -339,9 +321,7 @@ class AdaptiveDirectiveManager:
             directive.strategy_types = ["mean_reversion", "range_trading"]
             directive.preferred_indicators = ["BB", "RSI", "MACD"]
 
-    def _adapt_directive(
-        self, directive: StrategicDirective, metrics: PerformanceMetrics, success: bool
-    ):
+    def _adapt_directive(self, directive: StrategicDirective, metrics: PerformanceMetrics, success: bool):
         """
         Adapt directive parameters based on results.
 
@@ -353,53 +333,35 @@ class AdaptiveDirectiveManager:
         learning_rate = directive.learning_rate
 
         # Calculate success rate
-        success_rate = (
-            directive.successes / directive.attempts if directive.attempts > 0 else 0
-        )
+        success_rate = directive.successes / directive.attempts if directive.attempts > 0 else 0
 
         # Adapt exploration rate
         if success_rate < 0.3:
             # Low success → increase exploration
             directive.exploration_rate = min(0.8, directive.exploration_rate + 0.1)
-            self.logger.info(
-                f"  📈 Increasing exploration to {directive.exploration_rate:.2f}"
-            )
+            self.logger.info(f"  📈 Increasing exploration to {directive.exploration_rate:.2f}")
         elif success_rate > 0.7:
             # High success → reduce exploration (exploit)
             directive.exploration_rate = max(0.1, directive.exploration_rate - 0.05)
-            self.logger.info(
-                f"  📉 Reducing exploration to {directive.exploration_rate:.2f}"
-            )
+            self.logger.info(f"  📉 Reducing exploration to {directive.exploration_rate:.2f}")
 
         # Adapt targets based on achieved performance
         if success and directive.attempts >= 3:
             # Gradually raise bar if succeeding
             if metrics.sharpe_ratio > directive.performance_targets.min_sharpe_ratio:
-                new_target = directive.performance_targets.min_sharpe_ratio * (
-                    1 + learning_rate * 0.1
-                )
+                new_target = directive.performance_targets.min_sharpe_ratio * (1 + learning_rate * 0.1)
                 directive.performance_targets.min_sharpe_ratio = new_target
                 self.logger.info(f"  🎯 Raising Sharpe target to {new_target:.2f}")
 
-            if (
-                abs(metrics.max_drawdown)
-                < directive.performance_targets.max_drawdown * 0.8
-            ):
-                new_target = directive.performance_targets.max_drawdown * (
-                    1 - learning_rate * 0.1
-                )
+            if abs(metrics.max_drawdown) < directive.performance_targets.max_drawdown * 0.8:
+                new_target = directive.performance_targets.max_drawdown * (1 - learning_rate * 0.1)
                 directive.performance_targets.max_drawdown = max(0.05, new_target)
                 self.logger.info(f"  🎯 Tightening drawdown target to {new_target:.2%}")
 
         elif not success and directive.attempts >= 5:
             # Relax constraints if consistently failing
-            if (
-                metrics.sharpe_ratio
-                < directive.performance_targets.min_sharpe_ratio * 0.5
-            ):
-                new_target = directive.performance_targets.min_sharpe_ratio * (
-                    1 - learning_rate * 0.15
-                )
+            if metrics.sharpe_ratio < directive.performance_targets.min_sharpe_ratio * 0.5:
+                new_target = directive.performance_targets.min_sharpe_ratio * (1 - learning_rate * 0.15)
                 directive.performance_targets.min_sharpe_ratio = max(0.5, new_target)
                 self.logger.info(f"  🔽 Lowering Sharpe target to {new_target:.2f}")
 
@@ -435,15 +397,9 @@ class AdaptiveDirectiveManager:
             "total_directives": len(self.directives),
             "total_attempts": total_attempts,
             "total_successes": total_successes,
-            "success_rate": (
-                total_successes / total_attempts if total_attempts > 0 else 0
-            ),
-            "best_sharpe": max(
-                (d.best_sharpe for d in self.directives.values()), default=0
-            ),
-            "best_quality": max(
-                (d.best_quality_score for d in self.directives.values()), default=0
-            ),
+            "success_rate": (total_successes / total_attempts if total_attempts > 0 else 0),
+            "best_sharpe": max((d.best_sharpe for d in self.directives.values()), default=0),
+            "best_quality": max((d.best_quality_score for d in self.directives.values()), default=0),
         }
 
     def save_directives(self, filepath: str):
@@ -537,15 +493,13 @@ if __name__ == "__main__":
         print(f"  {key}: {value}")
 
     # Show directive state
-    print(f"\n🎯 Balanced Directive State:")
+    print("\n🎯 Balanced Directive State:")
     print(f"  Attempts: {balanced.attempts}")
     print(f"  Successes: {balanced.successes}")
     print(f"  Success Rate: {balanced.successes/balanced.attempts:.1%}")
     print(f"  Best Sharpe: {balanced.best_sharpe:.2f}")
     print(f"  Best Quality: {balanced.best_quality_score:.1f}")
     print(f"  Exploration Rate: {balanced.exploration_rate:.2f}")
-    print(
-        f"  Current Sharpe Target: {balanced.performance_targets.min_sharpe_ratio:.2f}"
-    )
+    print(f"  Current Sharpe Target: {balanced.performance_targets.min_sharpe_ratio:.2f}")
 
     print("\n✅ Strategic directives system operational!")

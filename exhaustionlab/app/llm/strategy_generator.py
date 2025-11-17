@@ -8,14 +8,14 @@ automated strategy creation and mutation.
 from __future__ import annotations
 
 import logging
-from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
 from enum import Enum
+from typing import Dict, List, Optional
 
-from .llm_client import LocalLLMClient, LLMResponse, LLMRequest
-from .prompts import PromptEngine, PromptContext
-from .validators import PyneCoreValidator, ValidationResult
 from ..backtest.strategy_genome import StrategyGenome
+from .llm_client import LLMRequest, LocalLLMClient
+from .prompts import PromptContext
+from .validators import PyneCoreValidator, ValidationResult
 
 
 class GeneratorMode(Enum):
@@ -96,9 +96,7 @@ class LLMStrategyGenerator:
                 generated_code = response.code_blocks[0]
 
                 # Validate generated code
-                validation = self.validator.validate_pyne_code(
-                    generated_code, check_runtime=request.validate_runtime
-                )
+                validation = self.validator.validate_pyne_code(generated_code, check_runtime=request.validate_runtime)
 
                 # If valid, we're done
                 if validation.is_valid:
@@ -106,15 +104,11 @@ class LLMStrategyGenerator:
                     last_validation = validation
                     break
                 else:
-                    self.logger.warning(
-                        f"Generated code invalid on attempt {attempt + 1}: {validation.error_message}"
-                    )
+                    self.logger.warning(f"Generated code invalid on attempt {attempt + 1}: {validation.error_message}")
                     last_validation = validation
 
                     # Modify request for next attempt based on validation feedback
-                    llm_request = self._modify_request_for_retry(
-                        llm_request, validation, request
-                    )
+                    llm_request = self._modify_request_for_retry(llm_request, validation, request)
             else:
                 self.logger.error(f"LLM generation failed: {response.error_message}")
 
@@ -122,15 +116,11 @@ class LLMStrategyGenerator:
         generation_time = time.time() - start_time
 
         # Determine result
-        success = (
-            best_response is not None and validation is not None and validation.is_valid
-        )
+        success = best_response is not None and validation is not None and validation.is_valid
 
         if success:
             self.gen_stats["successful_generations"] += 1
-            improvements = self.validator.suggest_improvements(
-                best_response.code_blocks[0]
-            )
+            improvements = self.validator.suggest_improvements(best_response.code_blocks[0])
         else:
             self.gen_stats["failed_generations"] += 1
             improvements = []
@@ -149,9 +139,7 @@ class LLMStrategyGenerator:
             improvement_suggestions=improvements,
         )
 
-    def generate_multiple_strategies(
-        self, requests: List[GenerationRequest]
-    ) -> List[GenerationResult]:
+    def generate_multiple_strategies(self, requests: List[GenerationRequest]) -> List[GenerationResult]:
         """Generate multiple strategies in batch."""
         results = []
 
@@ -162,9 +150,7 @@ class LLMStrategyGenerator:
 
         return results
 
-    def mutate_strategy(
-        self, base_code: str, mutation_type: str, context: PromptContext
-    ) -> GenerationResult:
+    def mutate_strategy(self, base_code: str, mutation_type: str, context: PromptContext) -> GenerationResult:
         """Specialized mutation of existing strategy."""
         mutation_request = GenerationRequest(
             mode=GeneratorMode.MUTATE,
@@ -176,9 +162,7 @@ class LLMStrategyGenerator:
 
         return self.generate_strategy(mutation_request)
 
-    def improve_strategy(
-        self, base_code: str, focus_area: str, context: PromptContext
-    ) -> GenerationResult:
+    def improve_strategy(self, base_code: str, focus_area: str, context: PromptContext) -> GenerationResult:
         """Improve existing strategy in specific area."""
         # Modify context for improvement
         context.examples = [base_code]
@@ -193,63 +177,41 @@ class LLMStrategyGenerator:
 
         return self.generate_strategy(improvement_request)
 
-    def create_indicator(
-        self, indicators: List[str], context: PromptContext
-    ) -> GenerationRequest:
+    def create_indicator(self, indicators: List[str], context: PromptContext) -> GenerationRequest:
         """Create indicator-focused generation request."""
         context.strategy_type = "indicator"
         context.indicators_to_include = indicators
 
-        return GenerationRequest(
-            mode=GeneratorMode.CREATE, context=context, max_retries=3
-        )
+        return GenerationRequest(mode=GeneratorMode.CREATE, context=context, max_retries=3)
 
-    def create_signal_strategy(
-        self, signal_logic: str, risk_profile: str, context: PromptContext
-    ) -> GenerationRequest:
+    def create_signal_strategy(self, signal_logic: str, risk_profile: str, context: PromptContext) -> GenerationRequest:
         """Create signal strategy generation request."""
         context.strategy_type = "signal"
         context.signal_logic = signal_logic
         context.risk_profile = risk_profile
 
-        return GenerationRequest(
-            mode=GeneratorMode.CREATE, context=context, max_retries=3
-        )
+        return GenerationRequest(mode=GeneratorMode.CREATE, context=context, max_retries=3)
 
     def _build_llm_request(self, request: GenerationRequest) -> LLMRequest:
         """Build LLM request from generation request."""
         if request.mode == GeneratorMode.CREATE:
             if request.context.strategy_type == "indicator":
-                return self.client.prompt_engine.generate_indicator_prompt(
-                    request.context
-                )
+                return self.client.prompt_engine.generate_indicator_prompt(request.context)
             else:
-                return self.client.prompt_engine.generate_signal_strategy_prompt(
-                    request.context
-                )
+                return self.client.prompt_engine.generate_signal_strategy_prompt(request.context)
 
         elif request.mode == GeneratorMode.MUTATE:
-            mutation_type = request.mutation_type or self._default_mutation_type(
-                request.context
-            )
-            return self.client.prompt_engine.generate_mutation_prompt(
-                request.base_strategy, mutation_type, request.context
-            )
+            mutation_type = request.mutation_type or self._default_mutation_type(request.context)
+            return self.client.prompt_engine.generate_mutation_prompt(request.base_strategy, mutation_type, request.context)
 
         elif request.mode == GeneratorMode.IMPROVE:
             # Build improvement prompt based on focus area
-            mutation_type = request.mutation_type or self._improve_mutation_type(
-                request.context
-            )
-            return self.client.prompt_engine.generate_mutation_prompt(
-                request.base_strategy, mutation_type, request.context
-            )
+            mutation_type = request.mutation_type or self._improve_mutation_type(request.context)
+            return self.client.prompt_engine.generate_mutation_prompt(request.base_strategy, mutation_type, request.context)
 
         else:
             # Default to strategy creation
-            return self.client.prompt_engine.generate_signal_strategy_prompt(
-                request.context
-            )
+            return self.client.prompt_engine.generate_signal_strategy_prompt(request.context)
 
     def _modify_request_for_retry(
         self,
@@ -263,9 +225,7 @@ class LLMStrategyGenerator:
         suggestions = self.validator.generate_fix_suggestions(errors)
 
         # Build feedback to add to prompt
-        feedback_text = (
-            "\n\n## GENERATION FEEDBACK:\nPrevious attempt had these issues:\n"
-        )
+        feedback_text = "\n\n## GENERATION FEEDBACK:\nPrevious attempt had these issues:\n"
         for suggestion in suggestions[:3]:  # Limit feedback
             feedback_text += f"- {suggestion}\n"
 
@@ -276,9 +236,7 @@ class LLMStrategyGenerator:
         modified_request = LLMRequest(
             prompt=modified_prompt,
             system_prompt=original_request.system_prompt,
-            temperature=max(
-                0.3, original_request.temperature * 0.8
-            ),  # Lower temperature for correction
+            temperature=max(0.3, original_request.temperature * 0.8),  # Lower temperature for correction
             max_tokens=original_request.max_tokens,
             context=original_request.context,
         )
@@ -293,9 +251,7 @@ class LLMStrategyGenerator:
             "strategy": ["indicator", "logic", "risk"],
         }
 
-        type_options = mutation_hierarchy.get(
-            context.strategy_type, ["parameter", "logic"]
-        )
+        type_options = mutation_hierarchy.get(context.strategy_type, ["parameter", "logic"])
         # TODO: Make this more intelligent based on previous mutations
         import random
 
@@ -314,20 +270,13 @@ class LLMStrategyGenerator:
         """Update success rate statistics."""
         total = self.gen_stats["total_generated"]
         if total > 0:
-            success_rate = self.gen_stats["successful_generations"] / total
-            avg_attempts = (
-                self.gen_stats["successful_generations"]
-                * 2  # Assume successful take 2 attempts avg
-                + self.gen_stats["failed_generations"] * 3
-            ) / total  # Failed take 3 attempts
+            avg_attempts = (self.gen_stats["successful_generations"] * 2 + self.gen_stats["failed_generations"] * 3) / total  # Assume successful take 2 attempts avg  # Failed take 3 attempts
             self.gen_stats["avg_attempts_per_success"] = avg_attempts
 
     def get_generation_stats(self) -> Dict[str, any]:
         """Get generation statistics."""
         total = self.gen_stats["total_generated"]
-        success_rate = (
-            (self.gen_stats["successful_generations"] / total) if total > 0 else 0.0
-        )
+        success_rate = (self.gen_stats["successful_generations"] / total) if total > 0 else 0.0
 
         return {
             **self.gen_stats,
@@ -345,9 +294,7 @@ class LLMStrategyGenerator:
         }
         self.client.reset_stats()
 
-    def convert_to_strategy_genome(
-        self, result: GenerationResult, name: str, description: str = ""
-    ) -> Optional[StrategyGenome]:
+    def convert_to_strategy_genome(self, result: GenerationResult, name: str, description: str = "") -> Optional[StrategyGenome]:
         """Convert generation result to StrategyGenome if successful."""
         if not result.success or not result.generated_code:
             return None
@@ -358,8 +305,7 @@ class LLMStrategyGenerator:
         # Create genome
         return StrategyGenome(
             name=name,
-            description=description
-            or metadata.get("description", f"LLM-generated strategy"),
+            description=description or metadata.get("description", "LLM-generated strategy"),
             pine_code="# Generated from PyneCore\n" + result.generated_code,
             pyne_code=result.generated_code,
             parameters=metadata.get("parameters", {}),

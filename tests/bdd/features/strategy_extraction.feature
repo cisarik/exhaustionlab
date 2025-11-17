@@ -106,3 +106,45 @@ Feature: Strategy Extraction
     And code score should be between 0 and 100
     And community score should be between 0 and 100
     And final score should be weighted average
+
+  # Integration Pipeline Scenarios
+  Scenario: End-to-end extraction pipeline
+    Given a GitHub search query "crypto momentum strategy"
+    When I run the complete extraction pipeline
+    Then strategies should be discovered
+    And code should be extracted from repositories
+    And quality scores should be calculated
+    And strategies should be saved to database
+    And pipeline statistics should be available
+
+  Scenario: Pipeline with filtering and ranking
+    Given a search query returning 10 repositories
+    And a minimum quality threshold of 60
+    When I run the filtered pipeline
+    Then only strategies with quality >= 60 should be saved
+    And saved strategies should be ranked by quality
+    And pipeline should report filtered count
+
+  Scenario: Concurrent extraction with thread pool
+    Given 5 GitHub repositories to extract
+    When I run concurrent extraction with 3 workers
+    Then all 5 strategies should be extracted
+    And extraction should use parallel processing
+    And total time should be less than sequential extraction
+    And no database race conditions should occur
+
+  Scenario: Pipeline error handling and recovery
+    Given a mix of valid and invalid repositories
+    When I run the extraction pipeline
+    Then valid repositories should be extracted successfully
+    And invalid repositories should be skipped with errors logged
+    And pipeline should complete without crashing
+    And error statistics should be tracked
+
+  Scenario: Incremental extraction with caching
+    Given previously extracted strategies in database
+    When I run extraction on same repositories
+    Then already-extracted strategies should be skipped
+    And only new or updated strategies should be processed
+    And extraction should be faster than initial run
+    And cache hit statistics should be reported

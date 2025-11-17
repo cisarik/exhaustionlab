@@ -1,0 +1,93 @@
+---
+name: Coverage Report
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday
+
+jobs:
+  coverage:
+    name: Test Coverage Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+
+      - name: Install dependencies
+        run: |
+          poetry install --no-interaction
+          poetry add pytest-cov --group dev
+
+      - name: Run full test suite with coverage
+        run: |
+          poetry run pytest \
+            tests/bdd/ \
+            tests/test_*.py \
+            --cov=exhaustionlab \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-report=term-missing \
+            --cov-config=pyproject.toml \
+            -v
+
+      - name: Generate coverage badge
+        uses: cicirello/jacoco-badge-generator@v2
+        with:
+          badges-directory: badges
+          generate-branches-badge: true
+          generate-summary: true
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          flags: unittests,bdd
+          name: exhaustionlab-coverage
+          fail_ci_if_error: false
+          verbose: true
+
+      - name: Coverage comment
+        uses: py-cov-action/python-coverage-comment-action@v3
+        if: github.event_name == 'pull_request'
+        with:
+          GITHUB_TOKEN: ${{ github.token }}
+          MINIMUM_GREEN: 80
+          MINIMUM_ORANGE: 60
+
+      - name: Upload HTML coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-html-report
+          path: htmlcov/
+          retention-days: 30
+
+      - name: Coverage summary
+        run: |
+          echo "## Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          poetry run pytest --cov=exhaustionlab --cov-report=term-missing \
+            | grep -A 100 "Coverage" >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: Enforce minimum coverage
+        run: |
+          poetry run pytest \
+            tests/bdd/ \
+            --cov=exhaustionlab/app/meta_evolution \
+            --cov-fail-under=80 \
+            --no-cov-on-fail

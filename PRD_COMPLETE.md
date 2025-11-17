@@ -4,7 +4,7 @@
 
 **ExhaustionLab** is a production-grade AI-driven cryptocurrency trading platform that combines:
 - Real-time market visualization (TradingView-style GUI with PySide6 + PyQtGraph)
-- Live market data streaming (Binance REST + WebSocket)  
+- Live market data streaming (Binance REST + WebSocket)
 - Advanced backtesting (PyneCore integration)
 - Intelligent strategy generation (LLM-powered meta-evolution with DeepSeek AI)
 - Institutional-grade validation (Live trading readiness assessment)
@@ -237,7 +237,7 @@ ExhaustionLab/
 - [x] Configuration layer
 - [x] Basic indicator calculations
 
-### Phase 2: Backtesting & GA ✅ COMPLETE  
+### Phase 2: Backtesting & GA ✅ COMPLETE
 - [x] PyneCore CLI integration
 - [x] Traditional GA optimizer
 - [x] Parameter persistence

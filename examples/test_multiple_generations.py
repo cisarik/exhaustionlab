@@ -6,15 +6,15 @@ Tests that the improved prompts consistently produce
 clean code without hallucinations.
 """
 
-import sys
 import os
+import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "exhaustionlab"))
 
-from exhaustionlab.app.llm import LocalLLMClient, LLMRequest
-from exhaustionlab.app.llm.prompts import PromptContext
+from exhaustionlab.app.llm import LLMRequest, LocalLLMClient
 from exhaustionlab.app.llm.hallucination_detector import HallucinationDetector
+from exhaustionlab.app.llm.prompts import PromptContext
 
 
 def test_multiple_generations(num_tests=5):
@@ -104,9 +104,7 @@ def test_multiple_generations(num_tests=5):
         print(f"{'='*80}")
 
         # Generate prompt
-        prompt_request = client.prompt_engine.generate_signal_strategy_prompt(
-            test_case["context"]
-        )
+        prompt_request = client.prompt_engine.generate_signal_strategy_prompt(test_case["context"])
 
         print(f"\n⏳ Generating...")
 

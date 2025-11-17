@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import argparse
-import asyncio
-from dataclasses import dataclass
+import json
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from random import Random
 from typing import Dict, Iterable, Tuple
@@ -10,33 +10,17 @@ from typing import Dict, Iterable, Tuple
 import numpy as np
 import pandas as pd
 
-from ..config.indicator_params import (
-    SQUEEZE_PARAM_SPECS,
-    save_squeeze_params,
-    squeeze_param_bounds,
-)
-from ..data.binance_rest import fetch_klines_csv_like
-from .engine import run_pyne
-from .llm_evolution import (
-    LLMStrategyMutator,
-    RobustStrategyEvolutionEngine,
-    create_exhaustion_main,
-)
 from ..config.fitness_config import get_fitness_config
+from ..config.indicator_params import SQUEEZE_PARAM_SPECS, save_squeeze_params, squeeze_param_bounds
+from ..data.binance_rest import fetch_klines_csv_like
+from ..meta_evolution import EvolutionDirective, EvolutionIntensity, IntelligentOrchestrator, LiveTradingValidator, MarketFocus, MetaevolutionConfig, MetaStrategyType
+from .engine import run_pyne
 from .indicators import compute_squeeze_momentum
+from .llm_evolution import LLMStrategyMutator, RobustStrategyEvolutionEngine
+from .multi_market_evaluator import MultiMarketEvaluator
+from .strategy_registry import StrategyRegistry
 
 # Fallback traditional GA systems
-from .traditional_ga import run_traditional_ga
-from ..meta_evolution import (
-    IntelligentOrchestrator,
-    EvolutionDirective,
-    MetaevolutionConfig,
-    MetaStrategyType,
-    MarketFocus,
-    EvolutionIntensity,
-    LiveTradingValidator,
-    create_institutional_validator,
-)
 
 
 @dataclass
@@ -48,9 +32,7 @@ class GASettings:
     elite: int = 2
 
 
-def load_history(
-    csv_path: Path | None, symbol: str, interval: str, limit: int
-) -> pd.DataFrame:
+def load_history(csv_path: Path | None, symbol: str, interval: str, limit: int) -> pd.DataFrame:
     if csv_path and csv_path.exists():
         df = pd.read_csv(csv_path)
         if "ts_open" not in df:
@@ -64,9 +46,7 @@ def load_history(
 
 
 class GeneticSqueezeOptimizer:
-    def __init__(
-        self, df: pd.DataFrame, settings: GASettings, rng: Random | None = None
-    ):
+    def __init__(self, df: pd.DataFrame, settings: GASettings, rng: Random | None = None):
         if df.empty:
             raise ValueError("DataFrame is empty")
         self.df = df.reset_index(drop=True)
@@ -82,9 +62,7 @@ class GeneticSqueezeOptimizer:
             if spec.kind == "bool":
                 sample[spec.name] = bool(self.rng.getrandbits(1))
             elif spec.kind == "int":
-                sample[spec.name] = int(
-                    self.rng.randrange(int(lo), int(hi) + 1, int(step))
-                )
+                sample[spec.name] = int(self.rng.randrange(int(lo), int(hi) + 1, int(step)))
             else:
                 sample[spec.name] = round(self.rng.uniform(float(lo), float(hi)), 6)
         return sample
@@ -108,15 +86,11 @@ class GeneticSqueezeOptimizer:
         fitness = float(equity.iloc[-1]) - (max_drawdown or 0.0) + 0.1 * sharpe
         return fitness
 
-    def select_parent(
-        self, population: Iterable[Tuple[Dict[str, float | int | bool], float]]
-    ) -> Dict[str, float | int | bool]:
+    def select_parent(self, population: Iterable[Tuple[Dict[str, float | int | bool], float]]) -> Dict[str, float | int | bool]:
         contenders = self.rng.sample(list(population), k=min(3, len(population)))
         return max(contenders, key=lambda item: item[1])[0]
 
-    def crossover(
-        self, a: Dict[str, float | int | bool], b: Dict[str, float | int | bool]
-    ) -> Dict[str, float | int | bool]:
+    def crossover(self, a: Dict[str, float | int | bool], b: Dict[str, float | int | bool]) -> Dict[str, float | int | bool]:
         child = {}
         for key in a.keys():
             if self.rng.random() < 0.5:
@@ -134,15 +108,11 @@ class GeneticSqueezeOptimizer:
                 candidate[spec.name] = not bool(candidate[spec.name])
             elif spec.kind == "int":
                 delta = self.rng.choice([-1, 1]) * int(step)
-                candidate[spec.name] = int(
-                    max(lo, min(hi, candidate[spec.name] + delta))
-                )
+                candidate[spec.name] = int(max(lo, min(hi, candidate[spec.name] + delta)))
             else:
                 span = hi - lo
                 delta = self.rng.uniform(-0.1 * span, 0.1 * span)
-                candidate[spec.name] = float(
-                    max(lo, min(hi, candidate[spec.name] + delta))
-                )
+                candidate[spec.name] = float(max(lo, min(hi, candidate[spec.name] + delta)))
 
     def run(self) -> Tuple[Dict[str, float | int | bool], float]:
         population = [self.random_candidate() for _ in range(self.settings.population)]
@@ -166,16 +136,12 @@ class GeneticSqueezeOptimizer:
             gen_best = max(scored, key=lambda item: item[1])
             if gen_best[1] > best[1]:
                 best = gen_best
-            print(
-                f"[GA] Generation {gen+1}/{self.settings.generations} best fitness={gen_best[1]:.6f}"
-            )
+            print(f"[GA] Generation {gen+1}/{self.settings.generations} best fitness={gen_best[1]:.6f}")
         return best
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Genetic optimizer for Squeeze Momentum parameters."
-    )
+    parser = argparse.ArgumentParser(description="Genetic optimizer for Squeeze Momentum parameters.")
     parser.add_argument(
         "--csv",
         type=Path,
@@ -189,9 +155,7 @@ def main():
     parser.add_argument("--mutation", type=float, default=0.2)
     parser.add_argument("--crossover", type=float, default=0.8)
     parser.add_argument("--elite", type=int, default=2)
-    parser.add_argument(
-        "--seed", type=int, help="Optional RNG seed for reproducibility."
-    )
+    parser.add_argument("--seed", type=int, help="Optional RNG seed for reproducibility.")
     parser.add_argument(
         "--apply",
         action="store_true",
@@ -207,12 +171,8 @@ def main():
         default="scripts/pyne/exhaustion_signal",
         help="PyneCore script to run when --pyne-ohlcv is provided.",
     )
-    parser.add_argument(
-        "--pyne-bin", help="Override Pyne executable (default: 'pyne')."
-    )
-    parser.add_argument(
-        "--pyne-timeout", type=int, default=300, help="Timeout for Pyne CLI (seconds)."
-    )
+    parser.add_argument("--pyne-bin", help="Override Pyne executable (default: 'pyne').")
+    parser.add_argument("--pyne-timeout", type=int, default=300, help="Timeout for Pyne CLI (seconds).")
 
     # LLM Evolution options
     parser.add_argument(
@@ -304,7 +264,7 @@ def main():
 
     if args.meta_evolution:
         # Advanced meta-evolution with intelligent orchestration
-        print(f"[GA] Starting META-EVOLUTION with DeepSeek AI...")
+        print("[GA] Starting META-EVOLUTION with DeepSeek AI...")
         print(f"[GA] Strategy Type: {args.strategy_type}")
         print(f"[GA] Market Focus: {args.market_focus}")
         print(f"[GA] Evolution Intensity: {args.evolution_intensity}")
@@ -355,19 +315,13 @@ def main():
             )
 
             # Adjust for intelligence level
-            meta_params.prompt_style = (
-                "creative" if args.intelligence > 0.7 else "quantitative"
-            )
-            meta_params.domain_knowledge_depth = (
-                "advanced" if args.intelligence > 0.5 else "intermediate"
-            )
+            meta_params.prompt_style = "creative" if args.intelligence > 0.7 else "quantitative"
+            meta_params.domain_knowledge_depth = "advanced" if args.intelligence > 0.5 else "intermediate"
 
             # Initialize intelligent orchestrator
             llm_mutator = LLMStrategyMutator()
             if not llm_mutator.llm_available:
-                print(
-                    "[GA] ❌ LLM not available - meta-evolution requires LLM connection"
-                )
+                print("[GA] ❌ LLM not available - meta-evolution requires LLM connection")
                 return
 
             orchestrator = IntelligentOrchestrator(llm_mutator.client, meta_config)
@@ -401,30 +355,20 @@ def main():
 
                 score = validation_results["metrics"].live_trading_score
                 print(f"[GA] Live Trading Score: {score:.1f}/100")
-                print(
-                    f"[GA] Ready for Live Trading: {'YES' if validation_results['is_live_trading_ready'] else 'NO'}"
-                )
+                print(f"[GA] Ready for Live Trading: {'YES' if validation_results['is_live_trading_ready'] else 'NO'}")
 
                 # Save validation results
                 if args.apply:
-                    validator.save_validation_results(
-                        validation_results, strategy_genome.name
-                    )
+                    validator.save_validation_results(validation_results, strategy_genome.name)
 
                 # Display key metrics
                 if validation_results["is_live_trading_ready"]:
-                    print(f"[GA] 🎉 STRATEGY READY FOR LIVE DEPLOYMENT!")
-                    print(
-                        f"[GA] Expected Sharpe: {validation_results['metrics'].sharpe_ratio:.2f}"
-                    )
-                    print(
-                        f"[GA] Expected Win Rate: {validation_results['metrics'].win_rate:.1%}"
-                    )
-                    print(
-                        f"[GA] Drawdown Risk: {validation_results['metrics'].max_drawdown:.1%}"
-                    )
+                    print("[GA] 🎉 STRATEGY READY FOR LIVE DEPLOYMENT!")
+                    print(f"[GA] Expected Sharpe: {validation_results['metrics'].sharpe_ratio:.2f}")
+                    print(f"[GA] Expected Win Rate: {validation_results['metrics'].win_rate:.1%}")
+                    print(f"[GA] Drawdown Risk: {validation_results['metrics'].max_drawdown:.1%}")
                 else:
-                    print(f"[GA] ⚠️ Strategy needs improvements:")
+                    print("[GA] ⚠️ Strategy needs improvements:")
                     for issue in validation_results["issues"]:
                         print(f"[GA]   - {issue}")
 
@@ -477,30 +421,21 @@ def main():
             market_evaluator = MultiMarketEvaluator(registry)
 
             # Create robust evolution engine
-            engine = RobustStrategyEvolutionEngine(
-                llm_mutator, registry, market_evaluator, fitness_config
-            )
-
-            # Initialize with base exhaustion strategy
-            base_strategy = create_exhaustion_main()
+            engine = RobustStrategyEvolutionEngine(llm_mutator, registry, market_evaluator, fitness_config)
 
             # Run async evolution
             def run_evolution():
-                return engine.run_evolution(
-                    generations=args.generations, population_size=args.population_size
-                )
+                return engine.run_evolution(generations=args.generations, population_size=args.population_size)
 
             # Use asyncio to run the async function
             import asyncio
 
             evolution_results = asyncio.run(run_evolution())
 
-            print(f"\n[GA] LLM Evolution complete!")
+            print("\n[GA] LLM Evolution complete!")
             print(f"[GA] Generations: {evolution_results['generations_completed']}")
             print(f"[GA] Best fitness: {evolution_results['best_fitness']:.4f}")
-            print(
-                f"[GA] Deployment-ready: {evolution_results['final_deployment_ready']} strategies"
-            )
+            print(f"[GA] Deployment-ready: {evolution_results['final_deployment_ready']} strategies")
 
             if args.apply and evolution_results["deployment_ready_strategies"]:
                 # Save deployment-ready strategies
@@ -511,9 +446,7 @@ def main():
                     with open(output_dir / f"{strategy['name']}.py", "w") as f:
                         f.write(strategy["pyne_code"])
 
-                print(
-                    f"[GA] Saved top {len(evolution_results['deployment_ready_strategies'])} strategies to {output_dir}"
-                )
+                print(f"[GA] Saved top {len(evolution_results['deployment_ready_strategies'])} strategies to {output_dir}")
 
         finally:
             # Cleanup temp file

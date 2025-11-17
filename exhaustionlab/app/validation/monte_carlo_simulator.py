@@ -13,12 +13,11 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Callable
 from enum import Enum
+from typing import Callable, Dict, List, Optional, Tuple
 
-import pandas as pd
 import numpy as np
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -160,9 +159,7 @@ class MonteCarloSimulator:
             # Reconstruct equity curve
             sim_equity = pd.Series([1.0])
             for ret in resampled_returns:
-                sim_equity = pd.concat(
-                    [sim_equity, pd.Series([sim_equity.iloc[-1] * (1 + ret)])]
-                )
+                sim_equity = pd.concat([sim_equity, pd.Series([sim_equity.iloc[-1] * (1 + ret)])])
 
             # Calculate metrics
             total_return = (sim_equity.iloc[-1] / sim_equity.iloc[0]) - 1
@@ -201,9 +198,7 @@ class MonteCarloSimulator:
             base_params: Base parameters
             param_ranges: Dict of param -> (min, max) ranges
         """
-        logger.info(
-            f"Running parameter sensitivity analysis ({self.num_simulations} runs)"
-        )
+        logger.info(f"Running parameter sensitivity analysis ({self.num_simulations} runs)")
 
         runs = []
         for i in range(self.num_simulations):
@@ -221,11 +216,7 @@ class MonteCarloSimulator:
                 returns = equity.pct_change().dropna()
                 sharpe = self._calculate_sharpe(returns)
                 max_dd = self._calculate_max_drawdown(equity)
-                win_rate = (
-                    (trades["pnl"] > 0).sum() / len(trades)
-                    if "pnl" in trades.columns and len(trades) > 0
-                    else 0
-                )
+                win_rate = (trades["pnl"] > 0).sum() / len(trades) if "pnl" in trades.columns and len(trades) > 0 else 0
 
                 runs.append(
                     SimulationRun(
@@ -289,11 +280,7 @@ class MonteCarloSimulator:
                 returns = equity.pct_change().dropna()
                 sharpe = self._calculate_sharpe(returns)
                 max_dd = self._calculate_max_drawdown(equity)
-                win_rate = (
-                    (trades["pnl"] > 0).sum() / len(trades)
-                    if "pnl" in trades.columns and len(trades) > 0
-                    else 0
-                )
+                win_rate = (trades["pnl"] > 0).sum() / len(trades) if "pnl" in trades.columns and len(trades) > 0 else 0
 
                 runs.append(
                     SimulationRun(
@@ -341,9 +328,7 @@ class MonteCarloSimulator:
             "high_volatility",
         ]
 
-        logger.info(
-            f"Running stress test ({len(scenarios)} scenarios × {self.num_simulations // len(scenarios)} runs each)"
-        )
+        logger.info(f"Running stress test ({len(scenarios)} scenarios × {self.num_simulations // len(scenarios)} runs each)")
 
         runs = []
         runs_per_scenario = self.num_simulations // len(scenarios)
@@ -362,11 +347,7 @@ class MonteCarloSimulator:
                     returns = equity.pct_change().dropna()
                     sharpe = self._calculate_sharpe(returns)
                     max_dd = self._calculate_max_drawdown(equity)
-                    win_rate = (
-                        (trades["pnl"] > 0).sum() / len(trades)
-                        if "pnl" in trades.columns and len(trades) > 0
-                        else 0
-                    )
+                    win_rate = (trades["pnl"] > 0).sum() / len(trades) if "pnl" in trades.columns and len(trades) > 0 else 0
 
                     runs.append(
                         SimulationRun(
@@ -381,9 +362,7 @@ class MonteCarloSimulator:
                     )
 
                 except Exception as e:
-                    logger.warning(
-                        f"Stress test run {i} (scenario: {scenario}) failed: {e}"
-                    )
+                    logger.warning(f"Stress test run {i} (scenario: {scenario}) failed: {e}")
                     continue
 
         if not runs:
@@ -397,18 +376,14 @@ class MonteCarloSimulator:
             # Simulate flash crash: sudden 10-20% drop
             crash_idx = np.random.randint(len(data) // 4, 3 * len(data) // 4)
             crash_magnitude = np.random.uniform(0.10, 0.20)
-            data.loc[data.index[crash_idx] :, ["open", "high", "low", "close"]] *= (
-                1 - crash_magnitude
-            )
+            data.loc[data.index[crash_idx] :, ["open", "high", "low", "close"]] *= 1 - crash_magnitude
 
         elif scenario == "extended_drawdown":
             # Simulate extended bear market: gradual 30-50% decline
             start_idx = np.random.randint(0, len(data) // 3)
             end_idx = start_idx + np.random.randint(len(data) // 4, len(data) // 2)
             decline = np.linspace(1.0, np.random.uniform(0.5, 0.7), end_idx - start_idx)
-            data.loc[
-                data.index[start_idx:end_idx], ["open", "high", "low", "close"]
-            ] *= decline[:, np.newaxis]
+            data.loc[data.index[start_idx:end_idx], ["open", "high", "low", "close"]] *= decline[:, np.newaxis]
 
         elif scenario == "high_volatility":
             # Increase volatility by 3-5x
@@ -418,18 +393,12 @@ class MonteCarloSimulator:
             stressed_close = (1 + stressed_returns).cumprod() * data["close"].iloc[0]
             data["close"] = stressed_close
             data["open"] = stressed_close * (1 + np.random.randn(len(data)) * 0.01)
-            data["high"] = data[["open", "close"]].max(axis=1) * (
-                1 + abs(np.random.randn(len(data)) * 0.01)
-            )
-            data["low"] = data[["open", "close"]].min(axis=1) * (
-                1 - abs(np.random.randn(len(data)) * 0.01)
-            )
+            data["high"] = data[["open", "close"]].max(axis=1) * (1 + abs(np.random.randn(len(data)) * 0.01))
+            data["low"] = data[["open", "close"]].min(axis=1) * (1 - abs(np.random.randn(len(data)) * 0.01))
 
         return data
 
-    def _aggregate_runs(
-        self, runs: List[SimulationRun], sim_type: SimulationType
-    ) -> SimulationResult:
+    def _aggregate_runs(self, runs: List[SimulationRun], sim_type: SimulationType) -> SimulationResult:
         """Aggregate simulation runs into result."""
         returns = [r.total_return for r in runs]
         sharpes = [r.sharpe_ratio for r in runs]
@@ -457,25 +426,14 @@ class MonteCarloSimulator:
         cvar_95 = np.mean(returns_below_var) if returns_below_var else var_95
 
         # Robustness assessment
-        robust_to_params = (
-            sim_type == SimulationType.PARAMETER_VARIATION
-            and std_return < abs(mean_return) * 0.5
-        )  # CV < 0.5
+        robust_to_params = sim_type == SimulationType.PARAMETER_VARIATION and std_return < abs(mean_return) * 0.5  # CV < 0.5
 
-        robust_to_timing = (
-            sim_type == SimulationType.RANDOM_ENTRY and prob_profit > 0.7
-        )  # 70%+ profitable
+        robust_to_timing = sim_type == SimulationType.RANDOM_ENTRY and prob_profit > 0.7  # 70%+ profitable
 
-        robust_to_stress = (
-            sim_type == SimulationType.MARKET_STRESS
-            and mean_return > 0
-            and prob_profit > 0.6
-        )
+        robust_to_stress = sim_type == SimulationType.MARKET_STRESS and mean_return > 0 and prob_profit > 0.6
 
         # Overall robustness score
-        robustness_score = self._calculate_robustness_score(
-            mean_return, std_return, prob_profit, prob_ruin, sharpe_ci
-        )
+        robustness_score = self._calculate_robustness_score(mean_return, std_return, prob_profit, prob_ruin, sharpe_ci)
 
         return SimulationResult(
             num_simulations=len(runs),

@@ -1,0 +1,137 @@
+# ExhaustionLab - CI/CD Makefile
+# Quick commands for testing and CI operations
+
+.PHONY: help install test-bdd test-integration test-coverage lint format pre-commit ci-local clean
+
+help:  ## Show this help message
+	@echo "ExhaustionLab CI/CD Commands:"
+	@echo ""
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+
+install:  ## Install all dependencies including dev tools
+	poetry install --no-interaction
+	poetry run pre-commit install --hook-type pre-commit
+	poetry run pre-commit install --hook-type pre-push
+
+test-bdd:  ## Run BDD strategy extraction tests
+	poetry run pytest tests/bdd/test_strategy_extraction.py -v
+
+test-integration:  ## Run integration pipeline tests only
+	poetry run pytest tests/bdd/ -k "pipeline or concurrent or incremental" -v
+
+test-parallel:  ## Run tests in parallel (faster)
+	poetry run pytest tests/bdd/ -n auto -v
+
+test-coverage:  ## Run tests with coverage report
+	poetry run pytest tests/bdd/ \
+		--cov=exhaustionlab/app/meta_evolution \
+		--cov-report=html \
+		--cov-report=term-missing \
+		--cov-report=xml
+
+test-coverage-full:  ## Run full test suite with coverage
+	poetry run pytest tests/ \
+		--cov=exhaustionlab \
+		--cov-report=html \
+		--cov-report=term-missing
+
+coverage-html:  ## Generate and open HTML coverage report
+	poetry run pytest tests/bdd/ --cov=exhaustionlab --cov-report=html
+	@echo "Opening coverage report..."
+	@command -v xdg-open >/dev/null && xdg-open htmlcov/index.html || \
+	 command -v open >/dev/null && open htmlcov/index.html || \
+	 echo "Please open htmlcov/index.html manually"
+
+lint:  ## Check code style without fixing
+	poetry run black --check exhaustionlab/ tests/
+	poetry run ruff check exhaustionlab/ tests/
+	poetry run isort --check exhaustionlab/ tests/
+
+format:  ## Auto-format code
+	poetry run black exhaustionlab/ tests/
+	poetry run ruff check --fix exhaustionlab/ tests/
+	poetry run isort exhaustionlab/ tests/
+
+security:  ## Run security checks with bandit
+	poetry run bandit -r exhaustionlab/ -c pyproject.toml
+
+pre-commit:  ## Run all pre-commit hooks
+	poetry run pre-commit run --all-files
+
+pre-commit-update:  ## Update pre-commit hook versions
+	poetry run pre-commit autoupdate
+
+ci-local:  ## Run full CI pipeline locally
+	@echo "Running full CI pipeline locally..."
+	@echo ""
+	@echo "1. Code formatting check..."
+	poetry run black --check exhaustionlab/ tests/
+	@echo ""
+	@echo "2. Linting..."
+	poetry run ruff check exhaustionlab/ tests/
+	@echo ""
+	@echo "3. Import sorting..."
+	poetry run isort --check exhaustionlab/ tests/
+	@echo ""
+	@echo "4. BDD tests with coverage..."
+	poetry run pytest tests/bdd/test_strategy_extraction.py \
+		--cov=exhaustionlab/app/meta_evolution \
+		--cov-report=term-missing \
+		--cov-fail-under=80 \
+		-v
+	@echo ""
+	@echo "✅ CI pipeline completed successfully!"
+
+ci-fast:  ## Quick CI check (formatting + tests only)
+	poetry run black --check exhaustionlab/ tests/
+	poetry run pytest tests/bdd/ -x -q
+
+watch:  ## Watch for changes and run tests automatically
+	poetry run pytest-watch tests/bdd/ -- -v
+
+clean:  ## Clean build artifacts and cache
+	rm -rf .pytest_cache/
+	rm -rf htmlcov/
+	rm -rf .coverage
+	rm -rf coverage.xml
+	rm -rf test-results/
+	rm -rf .ruff_cache/
+	rm -rf dist/
+	rm -rf build/
+	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+	find . -type f -name "*.pyc" -delete 2>/dev/null || true
+
+deps-update:  ## Update all dependencies
+	poetry update
+	poetry run pre-commit autoupdate
+
+deps-lock:  ## Lock dependencies without updating
+	poetry lock --no-update
+
+stats:  ## Show test statistics
+	@echo "Test Statistics:"
+	@echo ""
+	@echo "BDD Scenarios:"
+	@grep -c "Scenario:" tests/bdd/features/strategy_extraction.feature || echo "0"
+	@echo ""
+	@echo "Step Definitions:"
+	@grep -c "^def " tests/bdd/test_strategy_extraction.py || echo "0"
+	@echo ""
+	@echo "Lines of Code:"
+	@wc -l tests/bdd/test_strategy_extraction.py tests/bdd/features/strategy_extraction.feature | tail -1
+
+check-deps:  ## Check for outdated dependencies
+	poetry show --outdated
+
+github-ci-test:  ## Test GitHub Actions workflow locally (requires act)
+	@command -v act >/dev/null || (echo "Install 'act' first: https://github.com/nektos/act" && exit 1)
+	act -j bdd-tests
+
+gitlab-ci-test:  ## Test GitLab CI locally (requires gitlab-runner)
+	@command -v gitlab-runner >/dev/null || (echo "Install 'gitlab-runner' first" && exit 1)
+	gitlab-runner exec docker bdd-tests:python3.13
+
+# Development shortcuts
+dev: install format test-bdd  ## Setup dev environment and run tests
+quick: format test-bdd  ## Format and test (fast)
+full: ci-local  ## Full CI pipeline locally

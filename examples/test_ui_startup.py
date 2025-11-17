@@ -9,9 +9,7 @@ print("UI STARTUP CHECKLIST")
 print("=" * 70)
 
 print("\n✓ Starting server...")
-print(
-    "  Command: poetry run uvicorn exhaustionlab.webui.server:app --reload --port 8080"
-)
+print("  Command: poetry run uvicorn exhaustionlab.webui.server:app --reload --port 8080")
 print("\n✓ Open browser:")
 print("  URL: http://localhost:8080")
 print("\n✓ Check Browser Console (F12):")

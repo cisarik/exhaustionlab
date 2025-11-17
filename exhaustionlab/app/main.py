@@ -1,6 +1,9 @@
+import asyncio
+import sys
+
 from PySide6.QtWidgets import QApplication
-import sys, asyncio
 from qasync import QEventLoop
+
 from .main_window import MainWindow
 
 

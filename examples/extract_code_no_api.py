@@ -11,24 +11,22 @@ Also searches common file patterns:
 - strategy.pine, indicator.pine, etc.
 """
 
-import sys
-import os
-import requests
-import time
-import re
-from pathlib import Path
-from typing import List, Dict, Any, Optional
 import logging
+import os
+import re
+import sys
+import time
+from typing import Dict, List, Optional
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+import requests
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from exhaustionlab.app.meta_evolution.strategy_database import StrategyDatabase
 from exhaustionlab.app.meta_evolution.crawlers.code_extractor import GitHubCodeExtractor
+from exhaustionlab.app.meta_evolution.strategy_database import StrategyDatabase
 
 
 class DirectCodeExtractor:
@@ -44,11 +42,7 @@ class DirectCodeExtractor:
     def __init__(self):
         """Initialize extractor."""
         self.session = requests.Session()
-        self.session.headers.update(
-            {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-            }
-        )
+        self.session.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
         self.extractor = GitHubCodeExtractor()
 
     def extract_pine_files(self, repo_full_name: str) -> List[Dict[str, str]]:
@@ -157,13 +151,7 @@ class DirectCodeExtractor:
 
             # Find .pine files in HTML
             # Pattern: href="/owner/repo/blob/branch/path/file.pine"
-            pattern = (
-                r'href="/'
-                + re.escape(owner)
-                + r"/"
-                + re.escape(repo)
-                + r'/blob/([^/]+)/([^"]+\.(?:pine|txt))"'
-            )
+            pattern = r'href="/' + re.escape(owner) + r"/" + re.escape(repo) + r'/blob/([^/]+)/([^"]+\.(?:pine|txt))"'
 
             matches = re.findall(pattern, html)
 
@@ -229,7 +217,7 @@ class DirectCodeExtractor:
             pine_files = self.extract_pine_files(strategy.repo_full_name)
 
             if not pine_files:
-                logger.warning(f"  ⚠️ No Pine files found")
+                logger.warning("  ⚠️ No Pine files found")
                 return False
 
             # Use first file as main code
@@ -263,9 +251,7 @@ class DirectCodeExtractor:
             # Commit changes
             session.commit()
 
-            logger.info(
-                f"  ✅ Saved code: {len(code)} chars, {strategy.lines_of_code} LOC"
-            )
+            logger.info(f"  ✅ Saved code: {len(code)} chars, {strategy.lines_of_code} LOC")
 
             return True
 

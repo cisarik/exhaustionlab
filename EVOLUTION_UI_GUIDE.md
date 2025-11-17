@@ -72,7 +72,7 @@ Real-time event stream showing:
 
 Displays top 10 strategies by fitness with:
 - **Strategy Name**
-- **Fitness Score**  
+- **Fitness Score**
 - **Sharpe Ratio**
 - **Max Drawdown**
 - **Win Rate**

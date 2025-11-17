@@ -11,9 +11,7 @@ from typing import Dict, Iterable, Optional
 import pandas as pd
 
 
-def compute_exhaustion_signals(
-    df: pd.DataFrame, level1=9, level2=12, level3=14
-) -> pd.DataFrame:
+def compute_exhaustion_signals(df: pd.DataFrame, level1=9, level2=12, level3=14) -> pd.DataFrame:
     """Lightweight Python replica of your Exhaustion logic for GUI overlays.
     Returns DataFrame with boolean columns: bull_l1, bull_l2, bull_l3, bear_l1, bear_l2, bear_l3.
     Uses close vs close[n] rules.
@@ -171,19 +169,13 @@ def run_pyne(
     pyne_bin = pyne_executable or os.environ.get("PYNE_BIN") or "pyne"
     resolved_bin = shutil.which(pyne_bin)
     if not resolved_bin:
-        raise FileNotFoundError(
-            f"Pyne executable '{pyne_bin}' not found. Install `pynesys-pynecore[cli]` inside the Poetry env."
-        )
+        raise FileNotFoundError(f"Pyne executable '{pyne_bin}' not found. Install `pynesys-pynecore[cli]` inside the Poetry env.")
 
     input_path = Path(input_ohlcv_path).expanduser().resolve()
     if not input_path.exists():
         raise FileNotFoundError(f"Input OHLCV file '{input_path}' does not exist.")
 
-    out_dir = (
-        Path(output_dir).expanduser().resolve()
-        if output_dir
-        else Path(tempfile.mkdtemp(prefix="pyne-run-"))
-    )
+    out_dir = Path(output_dir).expanduser().resolve() if output_dir else Path(tempfile.mkdtemp(prefix="pyne-run-"))
     out_dir.mkdir(parents=True, exist_ok=True)
 
     cmd = [resolved_bin, "run", script_name, str(input_path), "--output", str(out_dir)]
@@ -207,7 +199,5 @@ def run_pyne(
         output_dir=out_dir,
     )
     if proc.returncode != 0:
-        raise RuntimeError(
-            f"Pyne run failed (exit {proc.returncode}).\nCMD: {' '.join(cmd)}\nSTDERR:\n{proc.stderr}"
-        )
+        raise RuntimeError(f"Pyne run failed (exit {proc.returncode}).\nCMD: {' '.join(cmd)}\nSTDERR:\n{proc.stderr}")
     return result

@@ -408,7 +408,7 @@ def safe_extract(url):
 class MockLLMClient:
     def test_connection(self):
         return True
-    
+
     def complete(self, messages, **kwargs):
         # Return mock Pine Script code
         return {"choices": [{"message": {"content": MOCK_CODE}}]}
@@ -463,7 +463,7 @@ class MockLLMClient:
 ### Type Hints
 ```python
 def process_strategy(
-    genome: StrategyGenome, 
+    genome: StrategyGenome,
     config: MetaevolutionConfig
 ) -> Optional[ValidationResult]:
     """Process strategy with full type hints."""
@@ -475,19 +475,19 @@ def process_strategy(
 def complex_function(param1: str, param2: int) -> Dict[str, Any]:
     """
     Brief description of function.
-    
+
     Longer explanation if needed.
-    
+
     Args:
         param1: Description of param1
         param2: Description of param2
-        
+
     Returns:
         Dictionary with results
-        
+
     Raises:
         ValueError: When invalid params provided
-        
+
     Examples:
         >>> result = complex_function("test", 42)
         >>> result['status']

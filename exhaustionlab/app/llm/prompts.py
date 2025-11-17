@@ -7,10 +7,8 @@ prompt templates for generating trading strategies and indicators.
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, TYPE_CHECKING
-from pathlib import Path
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 if TYPE_CHECKING:
     from .llm_client import LLMRequest
@@ -99,19 +97,19 @@ def main():
     # 1. Inputs
     period = input.int("Period", 14)
     threshold = input.float("Threshold", 30.0)
-    
+
     # 2. Calculate indicators
     rsi = close.rsi(period)
     sma = close.sma(20)
-    
+
     # 3. Generate signals (NOTE: Use & not 'and')
     buy = (rsi < threshold) & (close > sma)
     sell = (rsi > (100 - threshold)) & (close < sma)
-    
+
     # 4. Plot (NOTE: Only 3 parameters allowed!)
     plot(buy, "Buy Signal", color=color.green)
     plot(sell, "Sell Signal", color=color.red)
-    
+
     return {"buy": buy, "sell": sell}
 
 ═══════════════════════════════════════════════════════════════════════════════
@@ -169,7 +167,7 @@ Create a complete PyneCore indicator implementing {', '.join(context.indicators_
 
 ## REQUIREMENTS
 - Market: {', '.join(context.market_focus)} cryptocurrency trading
-- Timeframe: {context.timeframe} multi-timeframe compatibility  
+- Timeframe: {context.timeframe} multi-timeframe compatibility
 - Risk Profile: {context.risk_profile}
 - Strategy Type: {context.signal_logic}
 - Signal Logic: {self._get_signal_logic_description(context.signal_logic)}
@@ -194,7 +192,7 @@ Provide complete PyneCore code with:
 4. Signal generation logic
 5. Output plots for visualization
 6. Brief code comments explaining key logic
-7. Entire response wrapped in a single ```python fenced code block with no prose before or after.  
+7. Entire response wrapped in a single ```python fenced code block with no prose before or after.
    Absolutely no `<think>` sections or narrative text outside the code block.
 
 ## CONTEXT
@@ -215,10 +213,10 @@ def main():
     # Inputs
     length = input.int("Length", 14)
     source = input.source("Source", close)
-    
+
     # Calculations
     indicator_value = source.sma(length)
-    
+
     # Output
     plot(indicator_value, "Indicator", color=color.blue)
 ```
@@ -278,14 +276,14 @@ Focus on {self._get_signal_logic_description(context.signal_logic)}:
 ## CODE STRUCTURE
 Follow this proven signal strategy pattern:
 1. Define indicator inputs with sensible ranges
-2. Calculate required technical indicators  
+2. Calculate required technical indicators
 3. Implement signal detection logic
 4. Add signal strength levels (L1=weak, L2=medium, L3=strong)
 5. Plot signals for visualization
 6. Include signal state management
 
 ## KEY PINE SCRIPT → PYNECORE TRANSLATIONS
-- Pine `ta.rsi(close, 14)` → `close.rsi(14)` 
+- Pine `ta.rsi(close, 14)` → `close.rsi(14)`
 - Pine `ta.bb(close, 20, 2)` → Custom Bollinger Bands implementation
 - Pine `ta.atr(14)` → `Range.atr(14)` with custom Range class
 - Pine `strategy.entry()` → Use `plot()` with boolean signals
@@ -313,9 +311,7 @@ The strategy must be robust enough for consideration in automated trading portfo
             context=context,
         )
 
-    def generate_mutation_prompt(
-        self, base_code: str, mutation_type: str, context: PromptContext
-    ) -> "LLMRequest":
+    def generate_mutation_prompt(self, base_code: str, mutation_type: str, context: PromptContext) -> "LLMRequest":
         """Generate prompt for mutating existing strategy."""
 
         mutation_instructions = {
@@ -383,13 +379,13 @@ Provide the complete mutated PyneCore code ready for backtesting comparison.
 
     def build_context_prompt(self, context: PromptContext) -> str:
         """Build system prompt with comprehensive context."""
-        return f"""
+        return """
 ## PYNECORE API REFERENCE
 Key functions and patterns for PyneCore indicator development:
 
 ### Available Functions
 - `Series.sma(length)` - Simple Moving Average
-- `Series.ema(length)` - Exponential Moving Average  
+- `Series.ema(length)` - Exponential Moving Average
 - `Series.rsi(length)` - Relative Strength Index
 - `Series.stoch(length, smoothK, smoothD)` - Stochastic Oscillator
 - `Series.macd(fast, slow, signal)` - MACD
@@ -440,7 +436,7 @@ elif condition:
 
 # Signal levels
 level1_bull = bull == 9
-level2_bull = bull == 12  
+level2_bull = bull == 12
 level3_bull = bull == 14
 
 # Output signals
@@ -472,7 +468,7 @@ sell_signal = overbought and rsi_confirm
 upper_band = close.sma(20) + (close.std(20) * 2)
 lower_band = close.sma(20) - (close.std(20) * 2)
 
-# Volume confirmation  
+# Volume confirmation
 vol_ma = volume.sma(20)
 vol_spike = volume > vol_ma * 1.5
 
@@ -491,7 +487,7 @@ Focus on creating robust, production-grade indicators that can handle edge cases
 Pine Script Technical Analysis Functions:
 - ta.sma(source, length) - Simple Moving Average
 - ta.ema(source, length) - Exponential Moving Average
-- ta.rsi(source, length) - Relative Strength Index  
+- ta.rsi(source, length) - Relative Strength Index
 - ta.macd(source, fast, slow, signal) - MACD
 - ta.bb(source, length, mult) - Bollinger Bands
 - ta.stoch(source, length, smoothK, smoothD) - Stochastic
@@ -502,7 +498,7 @@ Pine Script Technical Analysis Functions:
             "strategy_functions": """
 Pine Script Strategy Functions:
 - strategy.entry() - Enter position
-- strategy.close() - Close position  
+- strategy.close() - Close position
 - strategy.exit() - Exit position
 - strategy.risk.max_drawdown_percent() - Drawdown limit
 - strategy.order() - Advanced order management
@@ -524,7 +520,7 @@ PyneCore Series Methods:
             "inputs": """
 PyneCore Input Functions:
 - input.int(name, default, minval, maxval) - Integer parameter
-- input.float(name, default, minval, maxval) - Float parameter  
+- input.float(name, default, minval, maxval) - Float parameter
 - input.bool(name, default) - Boolean parameter
 - input.source(name, default) - Data source selector (close, open, high, low)
 """,
@@ -551,7 +547,7 @@ Trend Following Template:
 Mean Reversion Template:
 - Calculate deviation from moving average
 - Use oscillators (RSI, Stoch) for confirmation
-- Fade extreme price movements  
+- Fade extreme price movements
 - Best for range-bound markets
 """,
         }
@@ -590,7 +586,7 @@ STRATEGY REQUIREMENTS:
 
 SIGNAL PATTERNS:
 - L1 signals: Standard conditions (fast response)
-- L2 signals: Stronger confirmation (medium response)  
+- L2 signals: Stronger confirmation (medium response)
 - L3 signals: Maximum confirmation (strong response)
 - CRITICAL: Use & for boolean operations: level1_bull = (condition1 & condition2)
 - Plot each level with ONLY allowed colors (green, red, blue, yellow, white, black)

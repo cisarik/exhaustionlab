@@ -1,32 +1,12 @@
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import Qt, Slot, QTimer, QProcess, QSignalBlocker
-from PySide6.QtWidgets import (
-    QCheckBox,
-    QComboBox,
-    QDoubleSpinBox,
-    QFormLayout,
-    QGroupBox,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QMainWindow,
-    QMessageBox,
-    QPlainTextEdit,
-    QPushButton,
-    QSpinBox,
-    QSplitter,
-    QVBoxLayout,
-    QWidget,
-)
+from PySide6.QtCore import QProcess, QSignalBlocker, Qt, QTimer, Slot
+from PySide6.QtWidgets import QCheckBox, QComboBox, QDoubleSpinBox, QFormLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMessageBox, QPlainTextEdit, QPushButton, QSpinBox, QSplitter, QVBoxLayout, QWidget
 
-from .chart.chart_widget import ChartWidget
-from .config.indicator_params import (
-    SQUEEZE_PARAM_SPECS,
-    load_active_squeeze_params,
-)
 from ..utils.config import settings
+from .chart.chart_widget import ChartWidget
+from .config.indicator_params import SQUEEZE_PARAM_SPECS, load_active_squeeze_params
 
 
 class MainWindow(QMainWindow):
@@ -51,9 +31,7 @@ class MainWindow(QMainWindow):
 
         self.status_strip = QLabel("")
         self.status_strip.setObjectName("status-strip")
-        self.status_strip.setStyleSheet(
-            "#status-strip { padding: 4px; color: #cfd8dc; }"
-        )
+        self.status_strip.setStyleSheet("#status-strip { padding: 4px; color: #cfd8dc; }")
         root_layout.addWidget(self.status_strip)
 
         self.splitter = QSplitter(Qt.Horizontal)
@@ -75,9 +53,7 @@ class MainWindow(QMainWindow):
     def _build_toolbar(self):
 
         toolbar = QHBoxLayout()
-        self.exchange_label = QLabel(
-            f"Exchange={settings.exchange} Symbol={self.active_symbol} TF={self.active_timeframe}"
-        )
+        self.exchange_label = QLabel(f"Exchange={settings.exchange} Symbol={self.active_symbol} TF={self.active_timeframe}")
 
         self.cb_l1 = QCheckBox("L1")
         self.cb_l1.setChecked(True)
@@ -124,11 +100,7 @@ class MainWindow(QMainWindow):
             if spec.kind == "bool":
                 ctrl = QCheckBox(spec.label)
                 ctrl.setChecked(bool(value))
-                ctrl.toggled.connect(
-                    lambda state, name=spec.name: self._on_sqz_param_changed(
-                        name, bool(state)
-                    )
-                )
+                ctrl.toggled.connect(lambda state, name=spec.name: self._on_sqz_param_changed(name, bool(state)))
                 form.addRow(ctrl)
             else:
                 if spec.kind == "int":
@@ -136,11 +108,7 @@ class MainWindow(QMainWindow):
                     ctrl.setRange(int(spec.min_value), int(spec.max_value))
                     ctrl.setSingleStep(int(spec.step))
                     ctrl.setValue(int(value))
-                    ctrl.valueChanged.connect(
-                        lambda val, name=spec.name: self._on_sqz_param_changed(
-                            name, int(val)
-                        )
-                    )
+                    ctrl.valueChanged.connect(lambda val, name=spec.name: self._on_sqz_param_changed(name, int(val)))
                 else:
                     ctrl = QDoubleSpinBox()
                     ctrl.setRange(float(spec.min_value), float(spec.max_value))
@@ -151,11 +119,7 @@ class MainWindow(QMainWindow):
                         decimals = len(step_str.split(".")[1].rstrip("0"))
                     ctrl.setDecimals(decimals)
                     ctrl.setValue(float(value))
-                    ctrl.valueChanged.connect(
-                        lambda val, name=spec.name: self._on_sqz_param_changed(
-                            name, float(val)
-                        )
-                    )
+                    ctrl.valueChanged.connect(lambda val, name=spec.name: self._on_sqz_param_changed(name, float(val)))
                 form.addRow(spec.label, ctrl)
             self.sqz_controls[spec.name] = ctrl
         return group
@@ -207,9 +171,7 @@ class MainWindow(QMainWindow):
         self.ga_seed = QSpinBox()
         self.ga_seed.setRange(0, 100000)
         self.ga_seed.setValue(42)
-        self.pyne_path = QLineEdit(
-            str(Path("data") / f"{self.active_symbol}-{self.active_timeframe}.ohlcv")
-        )
+        self.pyne_path = QLineEdit(str(Path("data") / f"{self.active_symbol}-{self.active_timeframe}.ohlcv"))
 
         self.btn_ga_window = QPushButton("Run GA (window)")
         self.btn_ga_daily = QPushButton("Run GA 24h")
@@ -248,9 +210,7 @@ class MainWindow(QMainWindow):
         self.active_symbol = self.symbol_combo.currentText().strip().upper()
         self.active_timeframe = self.tf_combo.currentText().strip()
         limit = max(100, min(self.window_spin.value(), 2000))
-        self.exchange_label.setText(
-            f"Exchange={settings.exchange} Symbol={self.active_symbol} TF={self.active_timeframe}"
-        )
+        self.exchange_label.setText(f"Exchange={settings.exchange} Symbol={self.active_symbol} TF={self.active_timeframe}")
         self.chart.bootstrap_load(
             symbol=self.active_symbol,
             timeframe=self.active_timeframe,
@@ -339,9 +299,7 @@ class MainWindow(QMainWindow):
 
     def _start_ga_process(self, cmd, description):
         if self.ga_process and self.ga_process.state() != QProcess.NotRunning:
-            QMessageBox.information(
-                self, "GA running", "Another GA process is already running."
-            )
+            QMessageBox.information(self, "GA running", "Another GA process is already running.")
             return
         self.ga_log.appendPlainText(f"\n>>> {description}\n{' '.join(cmd)}\n")
         self.ga_process = QProcess(self)
@@ -410,11 +368,7 @@ class MainWindow(QMainWindow):
 
     def _update_status_strip(self):
         params = self.chart.get_squeeze_params()
-        text = (
-            f"SQZMOM BB {int(params['length_bb'])}/{float(params['mult_bb']):.2f}  |  "
-            f"KC {int(params['length_kc'])}/{float(params['mult_kc']):.2f}  |  "
-            f"TrueRange={'ON' if params['use_true_range'] else 'OFF'}"
-        )
+        text = f"SQZMOM BB {int(params['length_bb'])}/{float(params['mult_bb']):.2f}  |  " f"KC {int(params['length_kc'])}/{float(params['mult_kc']):.2f}  |  " f"TrueRange={'ON' if params['use_true_range'] else 'OFF'}"
         if self._last_ga_fitness is not None:
             text += f"  |  Last GA fitness {self._last_ga_fitness:.4f}"
         self.status_strip.setText(text)

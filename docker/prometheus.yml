@@ -1,0 +1,24 @@
+---
+# Prometheus configuration for ExhaustionLab monitoring
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'exhaustionlab'
+    environment: 'production'
+
+scrape_configs:
+  # ExhaustionLab Web UI metrics
+  - job_name: 'exhaustionlab-webui'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['webui:8080']
+        labels:
+          service: 'webui'
+          component: 'api'
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

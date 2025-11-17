@@ -368,7 +368,7 @@ async def validate_strategy(strategy_func):
     # 1. Multi-market testing
     tester = EnhancedMultiMarketTester()
     multi_market = await tester.test_strategy(strategy_func)
-    
+
     # 2. Profit analysis
     analyzer = ProfitAnalyzer()
     best_result = multi_market.individual_results[0]
@@ -376,18 +376,18 @@ async def validate_strategy(strategy_func):
         equity_curve=best_result.equity_curve,
         trades_df=best_result.trades_df,
     )
-    
+
     # 3. Walk-forward validation
     validator = WalkForwardValidator()
     walk_forward = validator.validate(data, strategy_func)
-    
+
     # 4. Monte Carlo simulation
     simulator = MonteCarloSimulator(num_simulations=1000)
     monte_carlo = simulator.run_bootstrap_simulation(
         best_result.equity_curve,
         best_result.returns_series,
     )
-    
+
     # 5. Deployment readiness
     scorer = DeploymentReadinessScorer()
     readiness = scorer.assess(
@@ -396,7 +396,7 @@ async def validate_strategy(strategy_func):
         walk_forward=walk_forward,
         monte_carlo=monte_carlo,
     )
-    
+
     return readiness
 
 # Run validation

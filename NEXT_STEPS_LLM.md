@@ -1,7 +1,7 @@
 # 🚀 Next Steps: Integrating Improved LLM Prompts
 
-**Status**: ✅ Debugging complete - Ready to integrate  
-**Model**: google/gemma-3n-e4b (VALIDATED)  
+**Status**: ✅ Debugging complete - Ready to integrate
+**Model**: google/gemma-3n-e4b (VALIDATED)
 **Quality**: 100% - No hallucinations with improved prompts
 
 ## What We Discovered
@@ -87,7 +87,7 @@ poetry run python debug_llm_simple.py
 1. **Update System Prompt in `exhaustionlab/app/llm/llm_client.py`**
 
    Find the `_generate_offline_response()` method and the system prompts.
-   
+
    Replace with the improved system prompt from `test_improved_prompt.py`.
 
 2. **Update Enhanced Prompts in `exhaustionlab/app/llm/enhanced_prompts.py`**
@@ -102,23 +102,23 @@ poetry run python debug_llm_simple.py
    Create `exhaustionlab/app/llm/hallucination_detector.py`:
    ```python
    import re
-   
+
    def detect_hallucinations(code: str) -> list[str]:
        """Detect common hallucination patterns."""
        issues = []
-       
+
        if re.search(r'plot\([^)]*style=', code):
            issues.append("Found 'style=' parameter in plot()")
-       
+
        if re.search(r'plot\([^)]*title=', code):
            issues.append("Found 'title=' parameter in plot()")
-       
+
        if re.search(r'color\.(purple|orange|pink|brown)', code):
            issues.append("Found non-standard color")
-       
+
        if re.search(r'\s+and\s+.*[<>=]', code):
            issues.append("Found 'and' operator in boolean expression")
-       
+
        return issues
    ```
 
@@ -128,7 +128,7 @@ poetry run python debug_llm_simple.py
    poetry run python -c "
    from exhaustionlab.app.llm import LocalLLMClient
    from test_improved_prompt import IMPROVED_SYSTEM_PROMPT
-   
+
    client = LocalLLMClient()
    # Test 10 generations
    for i in range(10):
@@ -202,7 +202,7 @@ Where color.XXX can ONLY be:
 # ❌ NO style parameter
 plot(x, "Label", style=plot.Style.POINT)  # WRONG!
 
-# ❌ NO title parameter in plot() 
+# ❌ NO title parameter in plot()
 plot(x, "Label", title="X")  # WRONG!
 
 # ❌ NO 'and'/'or' operators for Series
@@ -239,7 +239,7 @@ def _build_base_strategy_prompt(self, context: PromptContext) -> str:
 
 plot() accepts ONLY 3 parameters:
   plot(value, "Label", color=color.XXX)
-  
+
 ✅ ALLOWED: color.green, color.red, color.blue, color.yellow
 ❌ FORBIDDEN: style=, title=, linewidth=, color.purple
 
@@ -401,5 +401,5 @@ With proper prompts:
 
 ---
 
-**Status**: ✅ READY FOR PRODUCTION INTEGRATION  
+**Status**: ✅ READY FOR PRODUCTION INTEGRATION
 **Confidence**: 🟢 HIGH (tested and validated)

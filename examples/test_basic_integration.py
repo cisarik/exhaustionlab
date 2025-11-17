@@ -5,11 +5,12 @@ Basic Integration Test
 Tests core GA and LLM integrations without requiring DeepSeek connection.
 """
 
-import sys
 import os
+import sys
 import tempfile
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
 
 # Add exhaustlab to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -30,9 +31,7 @@ def test_traditional_ga():
                 "high": [103, 104, 102, 107, 106, 108, 105, 101, 99, 100, 102],
                 "low": [99, 98, 97, 103, 102, 104, 103, 99, 98, 97, 98],
                 "volume": [1000, 1200, 800, 1500, 900, 1100, 700, 800, 1100] * 50,
-                "timestamp": pd.date_range("2024-01-01", periods=len([1000, 1200]))[
-                    "30min"
-                ],
+                "timestamp": pd.date_range("2024-01-01", periods=len([1000, 1200]))["30min"],
             }
         )
 
@@ -117,8 +116,8 @@ def test_llm_integration():
 
     try:
         from exhaustionlab.app.llm.llm_client import LocalLLMClient
-        from exhaustionlab.app.llm.validators import PyneCoreValidator
         from exhaustionlab.app.llm.prompt_engine import PromptEngine
+        from exhaustionlab.app.llm.validators import PyneCoreValidator
 
         # Test basic LLM client
         client = LocalLLMClient()
@@ -251,9 +250,7 @@ def main():
         print("\nNext steps:")
         print("  1. Install dependencies (poetry install)")
         print(" 2. Run LLM integration test: python test_llm_integration.py")
-        print(
-            " 3. Test meta-evolution: python -m exhaustionlab.app.backtest.ga_optimizer --help"
-        )
+        print(" 3. Test meta-evolution: python -m exhaustionlab.app.backtest.ga_optimizer --help")
     else:
         print(f"🚫 {total - passed}/{total} tests failed")
 

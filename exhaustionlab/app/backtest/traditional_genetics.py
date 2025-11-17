@@ -34,13 +34,9 @@ class TraditionalGenetics:
             if spec.kind == "bool":
                 candidate[spec.name] = bool(self.rng.getrandbits(1))
             elif spec.kind == "int":
-                candidate[spec.name] = int(
-                    self.rng.randrange(int(lo), int(hi) + 1, max(1, int(step)))
-                )
+                candidate[spec.name] = int(self.rng.randrange(int(lo), int(hi) + 1, max(1, int(step))))
             else:
-                candidate[spec.name] = float(
-                    round(self.rng.uniform(float(lo), float(hi)), 6)
-                )
+                candidate[spec.name] = float(round(self.rng.uniform(float(lo), float(hi)), 6))
         return candidate
 
     def crossover(self, parent_a: Candidate, parent_b: Candidate) -> Candidate:
@@ -60,15 +56,11 @@ class TraditionalGenetics:
                 candidate[spec.name] = not bool(candidate[spec.name])
             elif spec.kind == "int":
                 delta = self.rng.choice([-1, 1]) * max(1, int(step))
-                candidate[spec.name] = int(
-                    max(lo, min(hi, candidate[spec.name] + delta))
-                )
+                candidate[spec.name] = int(max(lo, min(hi, candidate[spec.name] + delta)))
             else:
                 span = float(hi - lo)
                 delta = self.rng.uniform(-0.1 * span, 0.1 * span)
-                candidate[spec.name] = float(
-                    max(lo, min(hi, candidate[spec.name] + delta))
-                )
+                candidate[spec.name] = float(max(lo, min(hi, candidate[spec.name] + delta)))
 
     def evolve_parameters(
         self,
@@ -95,9 +87,7 @@ class TraditionalGenetics:
         if returns.empty:
             raise ValueError("returns dataframe is empty")
 
-        population: List[Candidate] = [
-            self.generate_random_candidate() for _ in range(population_size)
-        ]
+        population: List[Candidate] = [self.generate_random_candidate() for _ in range(population_size)]
 
         def score_population(cands: List[Candidate]) -> List[Tuple[Candidate, float]]:
             return [(cand, fitness_func(cand, returns)) for cand in cands]

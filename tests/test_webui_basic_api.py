@@ -1,5 +1,5 @@
-from fastapi.testclient import TestClient
 import pandas as pd
+from fastapi.testclient import TestClient
 
 from exhaustionlab.webui.server import app
 
@@ -9,9 +9,7 @@ def test_chart_endpoint_with_mocked_data(monkeypatch):
     client = TestClient(app)
 
     # Provide a small deterministic dataframe
-    def _fake_fetch_klines(
-        symbol: str = "ADAEUR", interval: str = "1m", limit: int = 200
-    ) -> pd.DataFrame:
+    def _fake_fetch_klines(symbol: str = "ADAEUR", interval: str = "1m", limit: int = 200) -> pd.DataFrame:
         rows = max(50, min(limit, 200))
         ts = list(range(rows))
         base = 1.0

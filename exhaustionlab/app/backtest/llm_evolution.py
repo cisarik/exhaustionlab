@@ -8,23 +8,18 @@ for backtesting evaluation.
 
 from __future__ import annotations
 
+import asyncio
 import json
-import subprocess
+import random
 import sqlite3
-import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
-import random
-import asyncio
+from typing import Any, Dict, List, Optional, Tuple
 
-import pandas as pd
-
-from .engine import run_pyne
-from .strategy_registry import StrategyRegistry, StrategyMetrics
+from ..config.fitness_config import GlobalFitnessConfig, get_fitness_config
 from .multi_market_evaluator import MultiMarketEvaluator
 from .strategy_genome import StrategyGenome
-from ..config.fitness_config import GlobalFitnessConfig, get_fitness_config
+from .strategy_registry import StrategyMetrics, StrategyRegistry
 
 
 class LLMStrategyMutator:
@@ -37,7 +32,7 @@ class LLMStrategyMutator:
     ):
         try:
             # Import LLM components
-            from ..llm import LocalLLMClient, LLMStrategyGenerator, PromptContext
+            from ..llm import LLMStrategyGenerator, LocalLLMClient
 
             # Initialize LLM client
             self.client = LocalLLMClient(base_url=llm_endpoint, model_name=model_name)
@@ -63,9 +58,7 @@ class LLMStrategyMutator:
         # Fallback simple mutator
         self.simple_mutator = SimpleBackupMutator()
 
-    def mutate_strategy(
-        self, genome: StrategyGenome, mutation_type: str = "random"
-    ) -> StrategyGenome:
+    def mutate_strategy(self, genome: StrategyGenome, mutation_type: str = "random") -> StrategyGenome:
         """Apply LLM-based mutation to strategy."""
 
         if self.use_fallback or not self.llm_available:
@@ -80,19 +73,12 @@ class LLMStrategyMutator:
                 market_focus=["spot", "futures"],
                 timeframe="1m",
                 indicators_to_include=["RSI", "SMA", "MACD", "BB"],
-                signal_logic=(
-                    mutation_type
-                    if mutation_type
-                    in ["trend_following", "mean_reversion", "breakout", "exhaustion"]
-                    else "trend_following"
-                ),
+                signal_logic=(mutation_type if mutation_type in ["trend_following", "mean_reversion", "breakout", "exhaustion"] else "trend_following"),
                 risk_profile="balanced",
             )
 
             # Perform LLM mutation
-            result = self.generator.mutate_strategy(
-                genome.pyne_code, mutation_type, context
-            )
+            result = self.generator.mutate_strategy(genome.pyne_code, mutation_type, context)
 
             if result.success and result.generated_code:
                 # Convert to genome
@@ -107,13 +93,11 @@ class LLMStrategyMutator:
                     mutated_genome.parent_ids = genome.parent_ids + [genome.name]
                     mutated_genome.generation = genome.generation + 1
 
-                    print(
-                        f"✅ Successful LLM mutation of {genome.name} via {mutation_type}"
-                    )
+                    print(f"✅ Successful LLM mutation of {genome.name} via {mutation_type}")
                     return mutated_genome
 
             # Fall back to simple mutation if LLM fails
-            print(f"⚠️ LLM mutation failed, using simple fallback")
+            print("⚠️ LLM mutation failed, using simple fallback")
             return self.simple_mutator.mutate_strategy(genome, mutation_type)
 
         except Exception as e:
@@ -139,9 +123,7 @@ class SimpleBackupMutator:
     def __init__(self):
         pass
 
-    def mutate_strategy(
-        self, genome: StrategyGenome, mutation_type: str = "random"
-    ) -> StrategyGenome:
+    def mutate_strategy(self, genome: StrategyGenome, mutation_type: str = "random") -> StrategyGenome:
         """Apply simple parameter-based mutations."""
 
         if mutation_type == "parameter":
@@ -162,9 +144,7 @@ class SimpleBackupMutator:
             parent_ids=[genome.name],
         )
 
-    def _mutate_parameters(
-        self, params: Dict[str, float], mutation_type: str
-    ) -> Dict[str, float]:
+    def _mutate_parameters(self, params: Dict[str, float], mutation_type: str) -> Dict[str, float]:
         """Apply parameter mutations."""
         mutated = params.copy()
         for key in mutated:
@@ -196,9 +176,7 @@ class SimpleBackupMutator:
 
     def _convert_to_pine(self, pyne_code: str) -> str:
         """Convert PyneCore code to Pine Script format."""
-        return pyne_code.replace("from pynecore import", "//").replace(
-            "plot(", "plotshape("
-        )
+        return pyne_code.replace("from pynecore import", "//").replace("plot(", "plotshape(")
 
 
 class RobustStrategyEvolutionEngine:
@@ -228,14 +206,10 @@ class RobustStrategyEvolutionEngine:
     ) -> None:
         """Create initial population with multiple variants per individual."""
         # Save base strategy
-        base_strategy_id = self.registry.save_strategy(
-            base_strategy, "Initial base strategy"
-        )
+        base_strategy_id = self.registry.save_strategy(base_strategy, "Initial base strategy")
         base_version_id = self._get_current_version(base_strategy_id)
 
-        print(
-            f"[EVOLUTION] Initializing population with {population_size} individuals, {variants_per_individual} variants each"
-        )
+        print(f"[EVOLUTION] Initializing population with {population_size} individuals, {variants_per_individual} variants each")
 
         # Create population with variants
         self.population = [(base_strategy_id, base_version_id)]
@@ -243,29 +217,22 @@ class RobustStrategyEvolutionEngine:
         # Generate variants for each individual
         for i in range(population_size - 1):
             # Create individual
-            mutation_type = random.choice(
-                ["parameter", "logic", "indicator", "timeframe"]
-            )
+            mutation_type = random.choice(["parameter", "logic", "indicator", "timeframe"])
             individual = self.llm_mutator.mutate_strategy(base_strategy, mutation_type)
             individual.name = f"gen1_individual_{i+1}"
 
             # Save individual
-            individual_id = self.registry.save_strategy(
-                individual, f"Generation 1 individual {i+1}"
-            )
+            individual_id = self.registry.save_strategy(individual, f"Generation 1 individual {i+1}")
             individual_version_id = self._get_current_version(individual_id)
 
             # Create variants of this individual
             variant_config = {
-                "count": variants_per_individual
-                - 1,  # -1 because the individual itself counts as 1
+                "count": variants_per_individual - 1,  # -1 because the individual itself counts as 1
                 "mutation_types": ["parameter", "logic", "indicator"],
                 "markets_focus": random.sample(["BTCUSDT", "ETHUSDT", "ADAUSDT"], 2),
             }
 
-            variant_ids = self.registry.create_strategy_variant(
-                individual_id, variant_config
-            )
+            variant_ids = self.registry.create_strategy_variant(individual_id, variant_config)
 
             # Add all variants (including the individual itself) to population
             self.population.append((individual_id, individual_version_id))
@@ -273,9 +240,7 @@ class RobustStrategyEvolutionEngine:
                 var_version_id = self._get_current_version(var_id)
                 self.population.append((var_id, var_version_id))
 
-        print(
-            f"[EVOLUTION] Population initialized with {len(self.population)} total variants"
-        )
+        print(f"[EVOLUTION] Population initialized with {len(self.population)} total variants")
 
     def _get_current_version(self, strategy_id: str) -> str:
         """Get current version ID for strategy."""
@@ -286,18 +251,12 @@ class RobustStrategyEvolutionEngine:
             ).fetchone()
             return result[0] if result else None
 
-    async def evaluate_strategy_population(
-        self, generation: int
-    ) -> Dict[str, StrategyMetrics]:
+    async def evaluate_strategy_population(self, generation: int) -> Dict[str, StrategyMetrics]:
         """Evaluate entire population across multiple markets with real-world metrics."""
-        print(
-            f"[EVOLUTION] Evaluating generation {generation} - {len(self.population)} strategies"
-        )
+        print(f"[EVOLUTION] Evaluating generation {generation} - {len(self.population)} strategies")
 
         # Batch evaluate all strategies
-        evaluation_results = await self.market_evaluator.batch_evaluate_population(
-            self.population
-        )
+        evaluation_results = await self.market_evaluator.batch_evaluate_population(self.population)
 
         print(f"[EVOLUTION] Completed {len(evaluation_results)} strategy evaluations")
 
@@ -311,9 +270,7 @@ class RobustStrategyEvolutionEngine:
         for strategy_id, version_id in deployment_ready:
             self.registry.update_deployment_readiness(strategy_id, version_id, True)
 
-        print(
-            f"[EVOLUTION] {len(deployment_ready)} strategies marked as deployment-ready"
-        )
+        print(f"[EVOLUTION] {len(deployment_ready)} strategies marked as deployment-ready")
 
         return evaluation_results
 
@@ -332,19 +289,14 @@ class RobustStrategyEvolutionEngine:
             "market_impact": metrics.market_impact,
             "downside_deviation": metrics.downside_deviation,
             "volatility_adjusted_return": metrics.volatility_adjusted_return,
-            "avg_daily_trades": metrics.num_trades
-            / max(len(metrics.markets_tested), 1),
+            "avg_daily_trades": metrics.num_trades / max(len(metrics.markets_tested), 1),
         }
 
         # Calculate composite fitness
-        composite_fitness = self.fitness_config.calculate_composite_fitness(
-            metrics_dict
-        )
+        composite_fitness = self.fitness_config.calculate_composite_fitness(metrics_dict)
 
         # Use global config validation
-        is_ready, reasons = self.fitness_config.is_deployment_ready(
-            composite_fitness, metrics_dict
-        )
+        is_ready, reasons = self.fitness_config.is_deployment_ready(composite_fitness, metrics_dict)
 
         if not is_ready:
             self.logger.debug(f"Strategy not deployment-ready: {reasons}")
@@ -392,42 +344,30 @@ class RobustStrategyEvolutionEngine:
                 "market_impact": metrics.market_impact,
                 "downside_deviation": metrics.downside_deviation,
                 "volatility_adjusted_return": metrics.volatility_adjusted_return,
-                "avg_daily_trades": metrics.num_trades
-                / max(len(metrics.markets_tested), 1),
+                "avg_daily_trades": metrics.num_trades / max(len(metrics.markets_tested), 1),
             }
             return self.fitness_config.calculate_composite_fitness(metrics_dict)
 
-        sorted_strategies = sorted(
-            evaluation_results.items(), key=get_composite_fitness, reverse=True
-        )
+        sorted_strategies = sorted(evaluation_results.items(), key=get_composite_fitness, reverse=True)
 
         # Generate generation summary
         best_strategy_id, best_metrics = sorted_strategies[0]
         best_fitness = get_composite_fitness((best_strategy_id, best_metrics))
-        avg_fitness = sum(
-            get_composite_fitness(item) for item in sorted_strategies
-        ) / len(sorted_strategies)
+        avg_fitness = sum(get_composite_fitness(item) for item in sorted_strategies) / len(sorted_strategies)
 
         gen_summary = {
             "generation": generation,
             "best_fitness": best_fitness,
             "avg_fitness": avg_fitness,
             "population_size": len(self.population),
-            "deployment_ready": sum(
-                1 for (_, m) in sorted_strategies if self._is_deployment_ready(m)
-            ),
-            "diverse_markets": len(
-                set().union(*[m.markets_tested for (_, m) in sorted_strategies])
-            ),
+            "deployment_ready": sum(1 for (_, m) in sorted_strategies if self._is_deployment_ready(m)),
+            "diverse_markets": len(set().union(*[m.markets_tested for (_, m) in sorted_strategies])),
             "best_strategy_id": best_strategy_id,
         }
 
         self.generation_history.append(gen_summary)
 
-        print(
-            f"[EVOLUTION] Gen {generation}: Best fitness: {best_fitness:.4f}, "
-            f"Avg: {avg_fitness:.4f}, Deploy-ready: {gen_summary['deployment_ready']}"
-        )
+        print(f"[EVOLUTION] Gen {generation}: Best fitness: {best_fitness:.4f}, " f"Avg: {avg_fitness:.4f}, Deploy-ready: {gen_summary['deployment_ready']}")
 
         # Selection and reproduction
         new_population = []
@@ -441,12 +381,8 @@ class RobustStrategyEvolutionEngine:
         while len(new_population) < len(self.population):
             # Tournament selection from top 50%
             tournament_size = min(4, len(sorted_strategies) // 2)
-            tournament = random.sample(
-                sorted_strategies[: len(sorted_strategies) // 2], tournament_size
-            )
-            parent_strategy_id, parent_version_id = max(
-                tournament, key=get_composite_fitness
-            )[0]
+            tournament = random.sample(sorted_strategies[: len(sorted_strategies) // 2], tournament_size)
+            parent_strategy_id, parent_version_id = max(tournament, key=get_composite_fitness)[0]
 
             # Create offspring
             if random.random() < mutation_rate:
@@ -462,15 +398,9 @@ class RobustStrategyEvolutionEngine:
                         generation=generation,
                     )
 
-                    mutation_type = random.choice(
-                        ["parameter", "logic", "indicator", "timeframe"]
-                    )
-                    offspring_genome = self.llm_mutator.mutate_strategy(
-                        parent_genome, mutation_type
-                    )
-                    offspring_genome.name = (
-                        f"gen{generation+1}_offspring_{len(new_population)}"
-                    )
+                    mutation_type = random.choice(["parameter", "logic", "indicator", "timeframe"])
+                    offspring_genome = self.llm_mutator.mutate_strategy(parent_genome, mutation_type)
+                    offspring_genome.name = f"gen{generation+1}_offspring_{len(new_population)}"
 
                     # Save offspring
                     offspring_id = self.registry.save_strategy(
@@ -483,14 +413,10 @@ class RobustStrategyEvolutionEngine:
                     variant_config = {
                         "count": variants_per_offspring - 1,
                         "mutation_types": ["parameter", "logic"],
-                        "markets_focus": random.sample(
-                            ["BTCUSDT", "ETHUSDT", "ADAUSDT", "SOLUSDT"], 2
-                        ),
+                        "markets_focus": random.sample(["BTCUSDT", "ETHUSDT", "ADAUSDT", "SOLUSDT"], 2),
                     }
 
-                    variant_ids = self.registry.create_strategy_variant(
-                        offspring_id, variant_config
-                    )
+                    variant_ids = self.registry.create_strategy_variant(offspring_id, variant_config)
 
                     # Add offspring and variants
                     new_population.append((offspring_id, offspring_version_id))
@@ -501,9 +427,7 @@ class RobustStrategyEvolutionEngine:
                 # Clone parent
                 new_population.append((parent_strategy_id, parent_version_id))
 
-        self.population = new_population[
-            : len(self.population)
-        ]  # Ensure size consistency
+        self.population = new_population[: len(self.population)]  # Ensure size consistency
 
     async def run_evolution(
         self,
@@ -513,24 +437,17 @@ class RobustStrategyEvolutionEngine:
         convergence_patience: int = 5,
     ) -> Dict[str, Any]:
         """Run complete evolution process with convergence detection."""
-        print(
-            f"[EVOLUTION] Starting robust evolution: {generations} generations, "
-            f"{population_size} individuals, {variants_per_individual} variants each"
-        )
+        print(f"[EVOLUTION] Starting robust evolution: {generations} generations, " f"{population_size} individuals, {variants_per_individual} variants each")
 
         # Initialize with base strategy
         base_strategy = create_exhaustion_base()
-        await self.initialize_population(
-            base_strategy, population_size, variants_per_individual
-        )
+        await self.initialize_population(base_strategy, population_size, variants_per_individual)
 
         best_overall_fitness = -float("inf")
         no_improvement_count = 0
 
         for gen in range(generations):
-            await self.evolve_generation(
-                gen + 1, elite_size=2, variants_per_offspring=variants_per_individual
-            )
+            await self.evolve_generation(gen + 1, elite_size=2, variants_per_offspring=variants_per_individual)
 
             # Check for convergence
             current_best = self.generation_history[-1]["best_fitness"]
@@ -555,14 +472,10 @@ class RobustStrategyEvolutionEngine:
             "final_deployment_ready": len(deployment_ready),
             "generation_history": self.generation_history,
             "deployment_ready_strategies": deployment_ready,
-            "convergence_reason": (
-                "early_convergence"
-                if no_improvement_count >= convergence_patience
-                else "complete"
-            ),
+            "convergence_reason": ("early_convergence" if no_improvement_count >= convergence_patience else "complete"),
         }
 
-        print(f"[EVOLUTION] Evolution complete!")
+        print("[EVOLUTION] Evolution complete!")
         print(f"[EVOLUTION] Best fitness: {best_overall_fitness:.4f}")
         print(f"[EVOLUTION] Deployment-ready strategies: {len(deployment_ready)}")
 
@@ -598,7 +511,7 @@ async def main(
     fitness_config_name: str = "BALANCED_DEMO",
 ):
     """Main evolutionary process with robust multi-market evaluation."""
-    print(f"[EVOLUTION] Starting robust LLM-based strategy evolution...")
+    print("[EVOLUTION] Starting robust LLM-based strategy evolution...")
     print(f"[EVOLUTION] Using fitness config: {fitness_config_name}")
 
     # Initialize components
@@ -610,9 +523,7 @@ async def main(
     fitness_config = get_fitness_config(fitness_config_name)
 
     # Create robust evolution engine
-    engine = RobustStrategyEvolutionEngine(
-        llm_mutator, registry, market_evaluator, fitness_config
-    )
+    engine = RobustStrategyEvolutionEngine(llm_mutator, registry, market_evaluator, fitness_config)
 
     # Run evolution with comprehensive evaluation
     evolution_results = await engine.run_evolution(
@@ -623,7 +534,7 @@ async def main(
     )
 
     # Display results
-    print(f"\n" + "=" * 80)
+    print("\n" + "=" * 80)
     print("EVOLUTION RESULTS SUMMARY")
     print("=" * 80)
     print(f"Generations completed: {evolution_results['generations_completed']}")
@@ -634,16 +545,9 @@ async def main(
 
     # Show best strategies
     if evolution_results["deployment_ready_strategies"]:
-        print(
-            f"\nTop {min(3, len(evolution_results['deployment_ready_strategies']))} deployment-ready strategies:"
-        )
-        for i, strategy in enumerate(
-            evolution_results["deployment_ready_strategies"][:3]
-        ):
-            print(
-                f"  {i+1}. {strategy['name']} (fitness: {strategy['fitness']:.4f}, "
-                f"trades: {strategy.get('total_tests', 'N/A')})"
-            )
+        print(f"\nTop {min(3, len(evolution_results['deployment_ready_strategies']))} deployment-ready strategies:")
+        for i, strategy in enumerate(evolution_results["deployment_ready_strategies"][:3]):
+            print(f"  {i+1}. {strategy['name']} (fitness: {strategy['fitness']:.4f}, " f"trades: {strategy.get('total_tests', 'N/A')})")
 
     # Save comprehensive results
     results_dir = Path("/home/agile/ExhaustionLab/evolution_results")

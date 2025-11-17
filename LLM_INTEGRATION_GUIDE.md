@@ -63,7 +63,7 @@ The system provides your LLM with:
 
 Instead of random parameter changes, the LLM can:
 
-**Parameter Mutations**: 
+**Parameter Mutations**:
 ```
 level1 = 9 → level1 = 8, level1 = 11
 smoothing = 2 → smoothing = 3
@@ -120,7 +120,7 @@ stats = mutator.get_mutation_stats()
 ```python
 # Different presets for different goals
 config = get_fitness_config("AGGRESSIVE_DEMO")      # Fast testing
-config = get_fitness_config("BALANCED_RESEARCH")    # Development  
+config = get_fitness_config("BALANCED_RESEARCH")    # Development
 config = get_fitness_config("CONSERVATIVE_PRODUCTION") # Paper trading
 ```
 
@@ -135,7 +135,7 @@ from exhaustionlab.app.llm import PromptContext, LLMStrategyGenerator
 context = PromptContext(
     strategy_type='signal',
     market_focus=['futures'],
-    timeframe='5m', 
+    timeframe='5m',
     indicators_to_include=['RSI', 'MACD', 'ATR'],
     signal_logic='breakout',
     risk_profile='aggressive',
@@ -194,7 +194,7 @@ AGGRESSIVE = FitnessWeights(
     win_rate=0.10, consistency=0.08
 )
 
-# Conservative settings (risk management focus)  
+# Conservative settings (risk management focus)
 CONSERVATIVE = FitnessWeights(
     pnl=0.15, sharpe_ratio=0.30, max_drawdown=0.25,
     win_rate=0.20, consistency=0.15
@@ -220,14 +220,14 @@ CONSERVATIVE = FitnessWeights(
 
 ### 4. **Intelligent Prompting**
 - Deep Pine Script knowledge base
-- PyneCore API expertise  
+- PyneCore API expertise
 - Strategy pattern templates
 
 ## 🎯 Real-World Results You Should Expect
 
 ### With LLM Integration:
 - **Faster Convergence**: Better initial strategies
-- **Higher Quality**: More intelligent mutations  
+- **Higher Quality**: More intelligent mutations
 - **Innovation**: Completely new signal types
 - **Market Robustness**: Multi-market consideration
 
@@ -268,7 +268,7 @@ client = LocalLLMClient(base_url="http://127.0.0.1:1234")
 ## 🔮 Advanced Features (Future)
 
 1. **Multi-LLM Support**: Compare DeepSeek vs Claude vs GPT
-2. **Real-Time Learning**: Learn from successful mutations  
+2. **Real-Time Learning**: Learn from successful mutations
 3. **Strategy Portfolio**: Balance multiple strategies across markets
 4. **Auto-Tuning**: AI optimizes its own prompts based on success patterns
 

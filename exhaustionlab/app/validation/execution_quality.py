@@ -12,12 +12,12 @@ Analyzes trade execution quality including:
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from dataclasses import dataclass
 from enum import Enum
+from typing import Dict, Optional
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -124,23 +124,13 @@ class ExecutionQualityAnalyzer:
         # Extract basic metrics
         total_orders = len(trades_df)
         filled_orders = len(trades_df[trades_df.get("status", "filled") == "filled"])
-        partially_filled = len(
-            trades_df[trades_df.get("status", "filled") == "partial"]
-        )
-        rejected_orders = len(
-            trades_df[trades_df.get("status", "filled") == "rejected"]
-        )
+        partially_filled = len(trades_df[trades_df.get("status", "filled") == "partial"])
+        rejected_orders = len(trades_df[trades_df.get("status", "filled") == "rejected"])
         fill_rate = filled_orders / total_orders if total_orders > 0 else 0
 
         # Price quality
-        if (
-            signals_df is not None
-            and "signal_price" in signals_df.columns
-            and "fill_price" in trades_df.columns
-        ):
-            price_diff = (
-                trades_df["fill_price"] - signals_df["signal_price"]
-            ) / signals_df["signal_price"]
+        if signals_df is not None and "signal_price" in signals_df.columns and "fill_price" in trades_df.columns:
+            price_diff = (trades_df["fill_price"] - signals_df["signal_price"]) / signals_df["signal_price"]
             avg_fill_vs_signal = price_diff.mean() * 10000  # Convert to bps
             worst_fill = price_diff.max() * 10000
             best_fill = price_diff.min() * 10000
@@ -151,9 +141,7 @@ class ExecutionQualityAnalyzer:
             best_fill = -2.0
 
         # Price improvement (negative is good)
-        avg_price_improvement = (
-            -abs(avg_fill_vs_signal) if avg_fill_vs_signal < 0 else 0
-        )
+        avg_price_improvement = -abs(avg_fill_vs_signal) if avg_fill_vs_signal < 0 else 0
 
         # Execution timing
         if "execution_time_ms" in trades_df.columns:
@@ -202,9 +190,7 @@ class ExecutionQualityAnalyzer:
             taker_avg_cost = 2.5
 
         # Calculate overall quality score
-        quality_score = self._calculate_quality_score(
-            fill_rate, avg_fill_vs_signal, avg_exec_time, avg_market_impact
-        )
+        quality_score = self._calculate_quality_score(fill_rate, avg_fill_vs_signal, avg_exec_time, avg_market_impact)
 
         # Classify quality
         if avg_fill_vs_signal < 2.0:
@@ -289,21 +275,13 @@ class ExecutionQualityAnalyzer:
 
         # Calculate rolling metrics
         if "fill_price" in trades_df.columns and "signal_price" in trades_df.columns:
-            slippage = (
-                (trades_df["fill_price"] - trades_df["signal_price"])
-                / trades_df["signal_price"]
-                * 10000
-            )
+            slippage = (trades_df["fill_price"] - trades_df["signal_price"]) / trades_df["signal_price"] * 10000
             rolling_slippage = slippage.rolling(window=window_size).mean()
 
             # Check for significant drift
             first_window = rolling_slippage.iloc[window_size - 1]
             last_window = rolling_slippage.iloc[-1]
-            drift_pct = (
-                ((last_window - first_window) / abs(first_window)) * 100
-                if first_window != 0
-                else 0
-            )
+            drift_pct = ((last_window - first_window) / abs(first_window)) * 100 if first_window != 0 else 0
 
             drift_detected = abs(drift_pct) > 20  # 20% change is significant
 
@@ -361,11 +339,7 @@ class ExecutionQualityAnalyzer:
             # If trades happen at regular intervals, higher leakage risk
             if "timestamp" in trades_df.columns:
                 time_diffs = trades_df["timestamp"].diff().dt.total_seconds()
-                regularity = (
-                    1 - (time_diffs.std() / time_diffs.mean())
-                    if time_diffs.mean() > 0
-                    else 0
-                )
+                regularity = 1 - (time_diffs.std() / time_diffs.mean()) if time_diffs.mean() > 0 else 0
                 pattern_score = regularity * 30  # Max 30 points
             else:
                 pattern_score = 15

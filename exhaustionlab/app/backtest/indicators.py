@@ -21,9 +21,7 @@ def compute_squeeze_momentum(
       - sqz_on / sqz_off / no_sqz: boolean state flags
     """
     if df.empty:
-        return pd.DataFrame(
-            columns=["value", "bar_color", "zero_color", "sqz_on", "sqz_off", "no_sqz"]
-        )
+        return pd.DataFrame(columns=["value", "bar_color", "zero_color", "sqz_on", "sqz_off", "no_sqz"])
 
     close = df["close"]
     high = df["high"]

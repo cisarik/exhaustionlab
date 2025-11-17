@@ -4,7 +4,7 @@
 
 ```
 Total: 53 strategies
-With Code: 12 strategies  
+With Code: 12 strategies
 Total LOC: 2,728
 Avg Quality: 52.5/100
 Test Pass Rate: 8/15 (53%)
@@ -115,7 +115,7 @@ Knowledge Base: ~/.cache/strategy_examples/
 ### ✅ Passing (8/15)
 
 - Parse indicators from Pine Script
-- Extract features from strategy  
+- Extract features from strategy
 - Save strategy to database
 - Search strategies by quality
 - Search strategies by platform
@@ -137,16 +137,16 @@ Knowledge Base: ~/.cache/strategy_examples/
 
 1. **algo_trading_weighted_strategy** - 67.6 quality, 576 LOC
    - Indicators: RSI, EMA, STOCH, SMA, ATR
-   
+
 2. **PineScript** - 67.1 quality, 461 LOC
    - Indicators: EMA, SMA, ATR
-   
+
 3. **all-candlestick-pattern-indicators** - 66.6 quality, 589 LOC
    - Indicators: EMA, SMA, ATR
-   
+
 4. **pinescript_practice** - 66.5 quality, 11 LOC
    - Indicators: SMA
-   
+
 5. **TriexDev-SuperBuySellTrend** - 61.5 quality, 62 LOC
    - Indicators: SMA, ATR
 
@@ -227,6 +227,6 @@ poetry run python migrate_knowledge_base.py
 
 ---
 
-**Status**: ✅ OPERATIONAL  
-**Last Updated**: 2025-11-15  
+**Status**: ✅ OPERATIONAL
+**Last Updated**: 2025-11-15
 **Version**: ExhaustionLab v2.0.0

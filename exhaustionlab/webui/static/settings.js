@@ -26,7 +26,7 @@ async function loadSettings() {
   try {
     const response = await fetch("/api/settings");
     if (!response.ok) throw new Error("Failed to load settings");
-    
+
     currentSettings = await response.json();
     populateForm(currentSettings);
   } catch (error) {
@@ -45,7 +45,7 @@ function populateForm(settings) {
   document.getElementById("settings-testnet").checked = ex.testnet;
   document.getElementById("settings-default-symbol").value = ex.default_symbol;
   document.getElementById("settings-default-timeframe").value = ex.default_timeframe;
-  
+
   // LLM
   const llm = settings.llm;
   document.getElementById("settings-llm-enabled").checked = llm.enabled;
@@ -56,7 +56,7 @@ function populateForm(settings) {
   document.getElementById("settings-llm-temp").value = llm.temperature;
   document.getElementById("settings-llm-tokens").value = llm.max_tokens;
   document.getElementById("settings-llm-timeout").value = llm.timeout;
-  
+
   // Risk
   const risk = settings.risk;
   document.getElementById("settings-risk-position").value = (risk.max_position_size * 100).toFixed(1);
@@ -67,7 +67,7 @@ function populateForm(settings) {
   document.getElementById("settings-risk-sl-pct").value = (risk.stop_loss_pct * 100).toFixed(1);
   document.getElementById("settings-risk-tp").checked = risk.enable_take_profit;
   document.getElementById("settings-risk-tp-pct").value = (risk.take_profit_pct * 100).toFixed(1);
-  
+
   // Evolution
   const evo = settings.evolution;
   document.getElementById("settings-evo-gens").value = evo.default_generations;
@@ -76,7 +76,7 @@ function populateForm(settings) {
   document.getElementById("settings-evo-crawled").checked = evo.use_crawled;
   document.getElementById("settings-evo-days").value = evo.backtest_data_days;
   document.getElementById("settings-evo-metric").value = evo.fitness_metric;
-  
+
   // UI
   const ui = settings.ui;
   document.getElementById("settings-ui-theme").value = ui.theme;
@@ -137,16 +137,16 @@ async function saveSettings() {
       sound_enabled: document.getElementById("settings-ui-sound").checked,
     },
   };
-  
+
   try {
     const response = await fetch("/api/settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updates),
     });
-    
+
     if (!response.ok) throw new Error("Failed to save settings");
-    
+
     alert("✅ Settings saved successfully!");
     closeSettings();
   } catch (error) {
@@ -158,11 +158,11 @@ async function saveSettings() {
 // Reset settings
 async function resetSettings() {
   if (!confirm("Reset all settings to defaults?")) return;
-  
+
   try {
     const response = await fetch("/api/settings/reset", { method: "POST" });
     if (!response.ok) throw new Error("Failed to reset settings");
-    
+
     alert("✅ Settings reset to defaults!");
     await loadSettings();
   } catch (error) {
@@ -176,7 +176,7 @@ async function validateExchange() {
   const msg = document.getElementById("exchange-validation");
   msg.textContent = "Testing...";
   msg.className = "validation-message info";
-  
+
   try {
     const response = await fetch("/api/settings/validate/exchange");
     const result = await response.json();
@@ -193,7 +193,7 @@ async function validateLLM() {
   const msg = document.getElementById("llm-validation");
   msg.textContent = "Testing...";
   msg.className = "validation-message info";
-  
+
   try {
     const response = await fetch("/api/settings/validate/llm");
     const result = await response.json();
@@ -211,7 +211,7 @@ function switchTab(tabName) {
   document.querySelectorAll(".settings-tab").forEach(tab => {
     tab.classList.toggle("active", tab.dataset.tab === tabName);
   });
-  
+
   // Update panels
   document.querySelectorAll(".settings-panel").forEach(panel => {
     panel.classList.toggle("active", panel.dataset.panel === tabName);
@@ -233,12 +233,12 @@ document.addEventListener("DOMContentLoaded", () => {
   if (openBtn) {
     openBtn.addEventListener("click", openSettings);
   }
-  
+
   // Tab switching
   document.querySelectorAll(".settings-tab").forEach(tab => {
     tab.addEventListener("click", () => switchTab(tab.dataset.tab));
   });
-  
+
   // Close on outside click
   const modal = document.getElementById("settings-modal");
   if (modal) {

@@ -5,10 +5,11 @@ Calculates comprehensive quality scores for trading strategies.
 Combines source quality, code quality, performance, and community metrics.
 """
 
-from typing import Dict, Optional, Any
-import numpy as np
-import re
 import logging
+import re
+from typing import Any, Dict
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -110,12 +111,7 @@ class StrategyQualityScorer:
 
     def _score_code(self, strategy: Dict[str, Any]) -> float:
         """Score based on code quality (0-100)."""
-        code = (
-            strategy.get("code")
-            or strategy.get("pine_code")
-            or strategy.get("python_code")
-            or ""
-        )
+        code = strategy.get("code") or strategy.get("pine_code") or strategy.get("python_code") or ""
 
         if not code:
             # No code available, use heuristics
@@ -279,12 +275,7 @@ class StrategyQualityScorer:
             max_indent = max(max_indent, indent // 4)  # Assume 4 spaces per level
 
         # Complexity score (normalized)
-        complexity = (
-            (conditionals / max(1, loc)) * 0.3
-            + (loops / max(1, loc)) * 0.2
-            + (functions / max(1, loc)) * 0.2
-            + (max_indent / 10) * 0.3
-        )
+        complexity = (conditionals / max(1, loc)) * 0.3 + (loops / max(1, loc)) * 0.2 + (functions / max(1, loc)) * 0.2 + (max_indent / 10) * 0.3
 
         return min(1.0, complexity)
 

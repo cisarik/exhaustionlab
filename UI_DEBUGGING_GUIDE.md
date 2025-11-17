@@ -9,7 +9,7 @@ Check for errors:
 ```javascript
 // Should see these loaded:
 ✓ app.js loaded
-✓ evolution.js loaded  
+✓ evolution.js loaded
 ✓ No red errors
 
 // Test if functions exist:
@@ -46,7 +46,7 @@ Hard refresh to ensure latest CSS:
 ```bash
 # Test these URLs in browser or curl:
 curl http://localhost:8080/api/evolution/progress
-curl http://localhost:8080/api/evolution/hall-of-fame  
+curl http://localhost:8080/api/evolution/hall-of-fame
 curl http://localhost:8080/api/charts/candlestick.png?symbol=ADAEUR&timeframe=1m
 ```
 
@@ -58,7 +58,7 @@ curl http://localhost:8080/api/charts/candlestick.png?symbol=ADAEUR&timeframe=1m
 
 ### Issue 2: Hall of Fame shows "Loading..." forever
 **Cause**: API endpoint not responding
-**Fix**: 
+**Fix**:
 ```javascript
 // Check API manually:
 fetch('/api/evolution/hall-of-fame')
@@ -99,7 +99,7 @@ updateStrategySelector([testStrategy]);
 ### Issue 5: Evolution panel empty
 **Check**:
 - `#evolution-chart` exists
-- `#evolution-events` exists  
+- `#evolution-events` exists
 - `#phase-breakdown` exists
 
 ## Files to Verify
@@ -194,5 +194,5 @@ You just need to run evolution to generate strategies.
 
 **Need more help?** Share:
 - Console errors (if any)
-- What you see in Hall of Fame section  
+- What you see in Hall of Fame section
 - Whether buttons are clickable

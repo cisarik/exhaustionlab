@@ -60,18 +60,18 @@
 def test_calculate_sharpe_ratio():
     """Test Sharpe ratio calculation."""
     returns = pd.Series([0.01, 0.02, -0.01, 0.03, 0.00])
-    
+
     sharpe = calculate_sharpe_ratio(returns, risk_free_rate=0.0)
-    
+
     assert sharpe > 0
     assert 0 < sharpe < 10  # Reasonable range
-    
+
 def test_calculate_sharpe_ratio_zero_std():
     """Test Sharpe with zero standard deviation."""
     returns = pd.Series([0.0, 0.0, 0.0, 0.0])
-    
+
     sharpe = calculate_sharpe_ratio(returns)
-    
+
     assert sharpe == 0.0  # Should handle gracefully
 
 # NOW implement calculate_sharpe_ratio()
@@ -98,18 +98,18 @@ def test_llm_to_validator_pipeline():
     # Setup
     llm_client = LocalLLMClient()
     validator = PyneCoreValidator()
-    
+
     # Generate strategy
     context = PromptContext(
         strategy_type="momentum",
         market_focus="spot_crypto"
     )
-    
+
     result = llm_client.generate_strategy(context)
-    
+
     # Validate
     validation = validator.validate(result.code)
-    
+
     # Assertions
     assert result.success
     assert validation.is_valid
@@ -132,24 +132,24 @@ def test_llm_to_validator_pipeline():
 @pytest.mark.e2e
 def test_full_strategy_generation_pipeline():
     """Test complete pipeline from directive to live-ready strategy."""
-    
+
     # 1. Create evolution directive
     directive = EvolutionDirective(
         strategy_type=MetaStrategyType.MOMENTUM,
         market_focus=MarketFocus.SPOT_CRYPTO,
         performance_targets={'min_sharpe': 2.0}
     )
-    
+
     # 2. Load web examples
     knowledge_base = StrategyKnowledgeBase()
     examples = knowledge_base.find_similar(directive.strategy_type, limit=5)
     assert len(examples) > 0
-    
+
     # 3. Generate strategy
     orchestrator = IntelligentOrchestrator(llm_client, meta_config)
     strategy = orchestrator.generate_intelligent_strategy(directive)
     assert strategy is not None
-    
+
     # 4. Validate
     validator = LiveTradingValidator()
     result = validator.validate_strategy_for_live_trading(
@@ -158,7 +158,7 @@ def test_full_strategy_generation_pipeline():
         directive.strategy_type,
         directive.market_focus
     )
-    
+
     # 5. Assert live readiness
     assert result['is_live_trading_ready']
     assert result['metrics'].live_trading_score >= 70
@@ -253,7 +253,7 @@ def test_prompt_context_creation():
 def test_build_system_prompt():
     builder = IntelligentPromptBuilder(knowledge_base=None)
     system = builder._build_system_prompt()
-    
+
     assert "expert" in system.lower()
     assert "trading" in system.lower()
     assert len(system) > 100
@@ -266,10 +266,10 @@ def test_build_requirements_section():
         timeframe="1h",
         target_sharpe=2.0
     )
-    
+
     builder = IntelligentPromptBuilder(knowledge_base=None)
     requirements = builder._build_requirements_section(context)
-    
+
     assert "momentum" in requirements.lower()
     assert "2.0" in requirements
     assert "sharpe" in requirements.lower()
@@ -277,10 +277,10 @@ def test_build_requirements_section():
 # 4. Test pattern analysis
 def test_analyze_patterns():
     examples = [create_mock_strategy() for _ in range(5)]
-    
+
     builder = IntelligentPromptBuilder(knowledge_base=None)
     patterns = builder._analyze_patterns(examples)
-    
+
     assert "Common Indicators" in patterns
     assert "Average Performance" in patterns
 
@@ -292,10 +292,10 @@ def test_build_complete_prompt():
         timeframe="1h",
         example_strategies=[create_mock_strategy() for _ in range(3)]
     )
-    
+
     builder = IntelligentPromptBuilder(knowledge_base=None)
     prompt = builder.build_generation_prompt(context)
-    
+
     # Check all sections present
     assert "TASK:" in prompt
     assert "REQUIREMENTS" in prompt
@@ -317,20 +317,20 @@ def test_calculate_sharpe_ratio():
         returns=[0.01, 0.02, -0.01, 0.03],
         win_rate=0.50
     )
-    
+
     validator = LiveTradingValidator()
     sharpe = validator._calculate_sharpe_ratio(trades)
-    
+
     assert sharpe > 0
     assert sharpe < 10  # Reasonable range
 
 # 2. Test drawdown calculation
 def test_calculate_max_drawdown():
     equity_curve = pd.Series([100, 110, 105, 95, 100, 115])
-    
+
     validator = LiveTradingValidator()
     dd = validator._calculate_max_drawdown(equity_curve)
-    
+
     assert dd > 0
     assert dd < 1.0  # Should be fraction
     expected = (110 - 95) / 110  # ~13.6%
@@ -349,10 +349,10 @@ def test_calculate_live_trading_score():
         fill_rate=0.96,
         avg_latency_ms=250
     )
-    
+
     validator = LiveTradingValidator()
     score = validator.calculate_live_trading_score(metrics)
-    
+
     assert 0 <= score <= 100
     assert score >= 80  # Should be high for these metrics
 
@@ -361,7 +361,7 @@ def test_calculate_live_trading_score():
 def test_validate_real_strategy():
     # Load real backtest results
     backtest_results = load_real_backtest()
-    
+
     validator = LiveTradingValidator()
     result = validator.validate_strategy_for_live_trading(
         strategy_code="...",
@@ -369,7 +369,7 @@ def test_validate_real_strategy():
         strategy_type=MetaStrategyType.MOMENTUM,
         market_focus=MarketFocus.SPOT_CRYPTO
     )
-    
+
     assert 'metrics' in result
     assert 'is_live_trading_ready' in result
     assert isinstance(result['metrics'].live_trading_score, float)
@@ -416,10 +416,10 @@ def mock_llm_client():
                     }
                 }]
             }
-        
+
         def test_connection(self):
             return True
-    
+
     return MockLLMClient()
 
 
@@ -463,10 +463,10 @@ from pynecore import input, plot, color, script, Series
 def main():
     length = input.int("Length", 14)
     rsi = ta.rsi(close, length)
-    
+
     buy_signal = rsi < 30
     sell_signal = rsi > 70
-    
+
     plot(buy_signal ? close : na, "Buy", color=color.green)
     plot(sell_signal ? close : na, "Sell", color=color.red)
 '''
@@ -539,33 +539,33 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v2
-      
+
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: 3.11
-      
+
       - name: Install dependencies
         run: |
           pip install poetry
           poetry install
-      
+
       - name: Lint
         run: |
           poetry run black --check exhaustionlab/
           poetry run ruff check exhaustionlab/
-      
+
       - name: Unit Tests
         run: |
           poetry run pytest tests/ -m "not integration and not e2e" --cov=exhaustionlab --cov-fail-under=80
-      
+
       - name: Integration Tests
         run: |
           poetry run pytest tests/ -m integration
-      
+
       - name: Upload Coverage
         uses: codecov/codecov-action@v2
         with:
@@ -591,13 +591,13 @@ from hypothesis import given, strategies as st
 def test_sharpe_ratio_properties(returns):
     """Test Sharpe ratio properties with random data."""
     returns_series = pd.Series(returns)
-    
+
     sharpe = calculate_sharpe_ratio(returns_series)
-    
+
     # Properties that should always hold
     assert isinstance(sharpe, float)
     assert -10 < sharpe < 10  # Reasonable range
-    
+
     # If all returns positive, Sharpe should be positive
     if all(r > 0 for r in returns):
         assert sharpe > 0
@@ -650,7 +650,7 @@ def mock_github_api(mocker):
             'html_url': 'https://github.com/test/strategy'
         }]
     }
-    
+
     mocker.patch(
         'requests.Session.get',
         return_value=mocker.Mock(
@@ -686,12 +686,12 @@ def create_realistic_ohlcv(
         # Geometric Brownian Motion
         change = np.random.normal(trend, volatility)
         prices.append(prices[-1] * (1 + change))
-    
+
     closes = np.array(prices)
     highs = closes * (1 + abs(np.random.normal(0, 0.005, len(closes))))
     lows = closes * (1 - abs(np.random.normal(0, 0.005, len(closes))))
     opens = np.roll(closes, 1)
-    
+
     return pd.DataFrame({
         'open': opens,
         'high': highs,
@@ -714,7 +714,7 @@ def load_test_snapshot(name: str) -> pd.DataFrame:
 def create_snapshot():
     """Create new snapshot of current market data."""
     from exhaustionlab.app.data.binance_rest import fetch_klines_csv_like
-    
+
     data = fetch_klines_csv_like("BTCUSDT", "1h", limit=1000)
     data.to_csv("tests/data/snapshots/btc_2024.csv", index=False)
 ```
@@ -732,7 +732,7 @@ def test_strategy_validation_performance():
     """Ensure validation completes within acceptable time."""
     validator = LiveTradingValidator()
     backtest_data = create_realistic_ohlcv(num_bars=10000)
-    
+
     start = time.time()
     result = validator.validate_strategy_for_live_trading(
         strategy_code=MOCK_STRATEGY_CODE,
@@ -741,7 +741,7 @@ def test_strategy_validation_performance():
         market_focus=MarketFocus.SPOT_CRYPTO
     )
     elapsed = time.time() - start
-    
+
     assert elapsed < 60, f"Validation took {elapsed:.1f}s, should be <60s"
 ```
 

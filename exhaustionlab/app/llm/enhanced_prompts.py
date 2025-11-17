@@ -8,20 +8,19 @@ LLM generation quality.
 from __future__ import annotations
 
 import logging
-from typing import List, Dict, Optional, Any
-from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
 try:
-    from .prompts import PromptEngine, PromptContext
-    from .example_loader import ExampleLoader, load_examples_for_prompt
+    from .example_loader import ExampleLoader
+    from .prompts import PromptContext, PromptEngine
 except ImportError:
     # Standalone execution
     import sys
     from pathlib import Path
 
     sys.path.insert(0, str(Path(__file__).parent))
-    from prompts import PromptEngine, PromptContext
-    from example_loader import ExampleLoader, load_examples_for_prompt
+    from example_loader import ExampleLoader
+    from prompts import PromptContext, PromptEngine
 
 
 class EnhancedPromptBuilder:
@@ -79,9 +78,7 @@ class EnhancedPromptBuilder:
             return base_prompt
 
         # Format examples
-        examples_section = self.example_loader.format_examples_for_prompt(
-            examples, max_lines_per_example=40
-        )
+        examples_section = self.example_loader.format_examples_for_prompt(examples, max_lines_per_example=40)
 
         # Combine
         enhanced_prompt = f"""
@@ -125,9 +122,7 @@ Now create your indicator following the requirements above.
 
         # Get strategy type examples
         if context.signal_logic:
-            examples = self.example_loader.get_examples_by_type(
-                context.signal_logic, count=num_examples
-            )
+            examples = self.example_loader.get_examples_by_type(context.signal_logic, count=num_examples)
         else:
             examples = self.example_loader.get_best_examples(
                 count=num_examples,
@@ -138,9 +133,7 @@ Now create your indicator following the requirements above.
         if not examples:
             return base_prompt
 
-        examples_section = self.example_loader.format_examples_for_prompt(
-            examples, max_lines_per_example=50
-        )
+        examples_section = self.example_loader.format_examples_for_prompt(examples, max_lines_per_example=50)
 
         enhanced_prompt = f"""
 {base_prompt}
@@ -162,9 +155,7 @@ Make your strategy UNIQUE - don't just copy the examples!
 
         return enhanced_prompt
 
-    def build_mutation_prompt(
-        self, base_strategy_code: str, mutation_type: str, context: PromptContext
-    ) -> str:
+    def build_mutation_prompt(self, base_strategy_code: str, mutation_type: str, context: PromptContext) -> str:
         """
         Build mutation prompt with example patterns.
 
@@ -315,9 +306,7 @@ Create a professional, production-ready indicator.
 Create a complete, testable trading strategy.
 """
 
-    def _get_relevant_examples(
-        self, strategy_type: str, indicators: Optional[List[str]], count: int
-    ) -> List[Any]:
+    def _get_relevant_examples(self, strategy_type: str, indicators: Optional[List[str]], count: int) -> List[Any]:
         """Get relevant examples from cache or database."""
         cache_key = f"{strategy_type}_{indicators}_{count}"
 
@@ -332,9 +321,7 @@ Create a complete, testable trading strategy.
         ]:
             examples = self.example_loader.get_examples_by_type(strategy_type, count)
         else:
-            examples = self.example_loader.get_best_examples(
-                count=count, indicators=indicators, min_quality=60
-            )
+            examples = self.example_loader.get_best_examples(count=count, indicators=indicators, min_quality=60)
 
         self._example_cache[cache_key] = examples
         return examples
@@ -465,6 +452,6 @@ if __name__ == "__main__":
     print(f"Total strategies with code: {stats['total_with_code']}")
     print(f"Average quality: {stats['avg_quality']}")
     print(f"Average LOC: {stats['avg_loc']}")
-    print(f"\nTop indicators used:")
+    print("\nTop indicators used:")
     for indicator, count in list(stats["indicators_used"].items())[:5]:
         print(f"  - {indicator}: {count} strategies")

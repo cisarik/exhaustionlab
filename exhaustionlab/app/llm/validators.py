@@ -8,13 +8,13 @@ API usage, and structural correctness.
 from __future__ import annotations
 
 import ast
+import logging
+import re
 import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
-import re
-import logging
+from typing import List, Optional, Tuple
 
 
 @dataclass
@@ -82,9 +82,7 @@ class PyneCoreValidator:
             r"ta\.macd",
         ]
 
-    def validate_pyne_code(
-        self, code: str, check_runtime: bool = False
-    ) -> ValidationResult:
+    def validate_pyne_code(self, code: str, check_runtime: bool = False) -> ValidationResult:
         """Validate PyneCore code comprehensively."""
         issues = []
 
@@ -114,18 +112,12 @@ class PyneCoreValidator:
         is_valid = len(errors) == 0
 
         # Collect overall validity flags
-        syntax_valid = not any(
-            i.severity == "error" and "syntax" in i.message.lower() for i in issues
-        )
-        api_valid = not any(
-            i.severity == "error" and "api" in i.message.lower() for i in issues
-        )
-        structure_valid = not any(
-            i.severity == "error" and "structure" in i.message.lower() for i in issues
-        )
+        syntax_valid = not any(i.severity == "error" and "syntax" in i.message.lower() for i in issues)
+        api_valid = not any(i.severity == "error" and "api" in i.message.lower() for i in issues)
+        structure_valid = not any(i.severity == "error" and "structure" in i.message.lower() for i in issues)
 
         # Get primary error message if invalid
-        error_message = errors[0].message if errors and is_valid == False else None
+        error_message = errors[0].message if errors and not is_valid else None
 
         return ValidationResult(
             is_valid=is_valid,
@@ -237,12 +229,7 @@ class PyneCoreValidator:
                     )
 
             # Common mistakes
-            if (
-                "input." in line
-                and "input.int" not in line
-                and "input.float" not in line
-                and "input.bool" not in line
-            ):
+            if "input." in line and "input.int" not in line and "input.float" not in line and "input.bool" not in line:
                 issues.append(
                     ValidationIssue(
                         severity="warning",
@@ -253,9 +240,7 @@ class PyneCoreValidator:
                 )
 
             # Check for proper plot usage
-            if "plot(" in line and not any(
-                word in line for word in ["title=", "color="]
-            ):
+            if "plot(" in line and not any(word in line for word in ["title=", "color="]):
                 issues.append(
                     ValidationIssue(
                         severity="info",
@@ -305,10 +290,7 @@ class PyneCoreValidator:
         try:
             # Create temporary test file
             with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-                test_code = (
-                    code
-                    + '\n\n# Basic runtime test\nif __name__ == "__main__":\n    main()\n'
-                )
+                test_code = code + '\n\n# Basic runtime test\nif __name__ == "__main__":\n    main()\n'
                 f.write(test_code)
                 temp_path = Path(f.name)
 
@@ -366,18 +348,14 @@ class PyneCoreValidator:
         if errors:
             suggestions.append(f"🔴 Fix {len(errors)} critical error(s):")
             for error in errors[:3]:  # Limit to top 3
-                suggestions.append(
-                    f"  Line {error.line_number or '?'}: {error.message}"
-                )
+                suggestions.append(f"  Line {error.line_number or '?'}: {error.message}")
                 if error.suggestion:
                     suggestions.append(f"    💡 {error.suggestion}")
 
         if warnings:
             suggestions.append(f"🟡 Address {len(warnings)} warning(s):")
             for warning in warnings[:3]:  # Limit to top 3
-                suggestions.append(
-                    f"  Line {warning.line_number or '?'}: {warning.message}"
-                )
+                suggestions.append(f"  Line {warning.line_number or '?'}: {warning.message}")
                 if warning.suggestion:
                     suggestions.append(f"    💡 {warning.suggestion}")
 
@@ -414,16 +392,16 @@ from pynecore import Series, input, plot, color, script, Persistent
 def main():
     # Inputs
     level1 = input.int("Level 1", 9)
-    level2 = input.int("Level 2", 12) 
+    level2 = input.int("Level 2", 12)
     level3 = input.int("Level 3", 14)
-    
+
     # Persistent state
     cycle: Persistent[int] = 0
     bull: Persistent[int] = 0
     bear: Persistent[int] = 0
-    
+
     # Signal logic here
-    
+
     # Plot signals
     plot(bull == level1, "Bull L1", color=color.green)
     # ... more plots
@@ -438,15 +416,15 @@ def main():
     # Inputs
     fast_ma = input.int("Fast MA", 12)
     slow_ma = input.int("Slow MA", 26)
-    
+
     # Calculations
     fast = close.sma(fast_ma)
     slow = close.sma(slow_ma)
-    
+
     # Signals
     crossover = fast > slow and fast[1] <= slow[1]
     crossunder = fast < slow and fast[1] >= slow[1]
-    
+
     # Plot results
     plot(fast, "Fast MA", color=color.blue)
     plot(slow, "Slow MA", color=color.red)
@@ -457,11 +435,7 @@ def main():
 
         if template_name in templates:
             result = self.validate_pyne_code(templates[template_name])
-            return (
-                templates[template_name]
-                if result.is_valid
-                else "# Template validation failed"
-            )
+            return templates[template_name] if result.is_valid else "# Template validation failed"
 
         return "# Unknown template"
 
@@ -476,9 +450,7 @@ def main():
         if "plot(" in code and "plotshape(" not in code:
             suggestions.append("Add plotshape() for clearer signal visualization")
 
-        if "Persistent" not in code and any(
-            term in code for term in ["bull", "bear", "cycle"]
-        ):
+        if "Persistent" not in code and any(term in code for term in ["bull", "bear", "cycle"]):
             suggestions.append("Consider using Persistent[] for state preservation")
 
         if "input.int" in code and "input.float" not in code:

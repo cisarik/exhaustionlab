@@ -2,8 +2,8 @@
 @pyne
 """
 
-from pynecore import Series, Persistent
-from pynecore.lib import script, close, plot, color, input
+from pynecore import Persistent, Series
+from pynecore.lib import close, color, input, plot, script
 
 # NOTE: This is a *PyneCore* indicator (runs bar-by-bar like Pine).
 # It mirrors your Exhaustion Signal logic and emits boolean markers via plots.

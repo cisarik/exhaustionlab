@@ -7,12 +7,12 @@ import pyqtgraph as pg
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
-from .candle_item import CandlestickItem
 from ..backtest.engine import compute_exhaustion_signals
 from ..backtest.indicators import compute_squeeze_momentum
 from ..config.indicator_params import load_active_squeeze_params
 from ..data.binance_rest import fetch_klines_csv_like
 from ..data.binance_ws import BinanceBookTickerWS, BinanceWS
+from .candle_item import CandlestickItem
 
 
 class TimeAxisItem(pg.AxisItem):
@@ -51,9 +51,7 @@ class ChartWidget(QWidget):
         layout.setSpacing(0)
         self.info_label = QLabel("Loading candlesticks...")
         self.info_label.setObjectName("chart-info-label")
-        self.info_label.setStyleSheet(
-            "#chart-info-label { color: #cfd8dc; font-size: 12px; padding: 4px 8px; }"
-        )
+        self.info_label.setStyleSheet("#chart-info-label { color: #cfd8dc; font-size: 12px; padding: 4px 8px; }")
         layout.addWidget(self.info_label)
 
         axis_main = TimeAxisItem(lambda: self._df)
@@ -66,9 +64,7 @@ class ChartWidget(QWidget):
         layout.addWidget(self.view, 4)
 
         axis_sqz = TimeAxisItem(lambda: self._df)
-        self.squeeze_view = pg.PlotWidget(
-            axisItems={"bottom": axis_sqz}, enableMenu=False
-        )
+        self.squeeze_view = pg.PlotWidget(axisItems={"bottom": axis_sqz}, enableMenu=False)
         self.squeeze_view.setBackground("#05070b")
         self.squeeze_view.showGrid(x=False, y=True, alpha=0.1)
         self.squeeze_view.setMenuEnabled(False)
@@ -79,9 +75,7 @@ class ChartWidget(QWidget):
         self.squeeze_view.setXLink(self.view)
 
         axis_vol = TimeAxisItem(lambda: self._df)
-        self.volume_view = pg.PlotWidget(
-            axisItems={"bottom": axis_vol}, enableMenu=False
-        )
+        self.volume_view = pg.PlotWidget(axisItems={"bottom": axis_vol}, enableMenu=False)
         self.volume_view.setBackground("#080b10")
         self.volume_view.showGrid(x=False, y=True, alpha=0.15)
         self.volume_view.setMaximumHeight(160)
@@ -106,9 +100,7 @@ class ChartWidget(QWidget):
         self._squeeze_zero_items: List[pg.ScatterPlotItem] = []
         self._auto_follow = True
         self._last_price_value: Optional[float] = None
-        self._price_curve = pg.PlotCurveItem(
-            pen=pg.mkPen(color=(38, 174, 255, 200), width=1.25)
-        )
+        self._price_curve = pg.PlotCurveItem(pen=pg.mkPen(color=(38, 174, 255, 200), width=1.25))
         self._price_curve.setZValue(15)
         self.view.addItem(self._price_curve)
         self._sqz_params = load_active_squeeze_params()
@@ -162,9 +154,7 @@ class ChartWidget(QWidget):
         self.volume_view.addItem(self._volume_v_line, ignoreBounds=True)
         self.squeeze_view.addItem(self._squeeze_v_line, ignoreBounds=True)
         self._set_crosshair_visible(False)
-        self._mouse_proxy = pg.SignalProxy(
-            self.view.scene().sigMouseMoved, rateLimit=60, slot=self._on_mouse_moved
-        )
+        self._mouse_proxy = pg.SignalProxy(self.view.scene().sigMouseMoved, rateLimit=60, slot=self._on_mouse_moved)
 
         self._price_lines = {
             "last": self._create_price_line(color=(0, 170, 255), prefix="Last "),
@@ -197,13 +187,9 @@ class ChartWidget(QWidget):
         if self._last_sig is not None:
             self._overlay_scatter(self._last_sig)
 
-    def bootstrap_load(
-        self, symbol="ADAEUR", timeframe="1m", enable_ws=True, limit=500
-    ):
+    def bootstrap_load(self, symbol="ADAEUR", timeframe="1m", enable_ws=True, limit=500):
         # 1) initial REST load
-        df = fetch_klines_csv_like(
-            symbol=symbol, interval=timeframe, limit=min(max(limit, 50), 1000)
-        )
+        df = fetch_klines_csv_like(symbol=symbol, interval=timeframe, limit=min(max(limit, 50), 1000))
         self._set_df(df)
         # 2) live updates
         if enable_ws:
@@ -279,9 +265,7 @@ class ChartWidget(QWidget):
 
     def _start_ws(self, symbol, timeframe):
         self._stop_ws()
-        self._kline_ws = BinanceWS(
-            symbol=symbol, interval=timeframe, on_kline=self._on_kline
-        )
+        self._kline_ws = BinanceWS(symbol=symbol, interval=timeframe, on_kline=self._on_kline)
         self._quote_ws = BinanceBookTickerWS(symbol=symbol, on_quote=self._on_quote)
         loop = asyncio.get_event_loop()
         loop.create_task(self._kline_ws.start())
@@ -379,9 +363,7 @@ class ChartWidget(QWidget):
             self.volume_view.setXRange(left, right + 1, padding=0)
 
     def _create_price_line(self, color, prefix):
-        line = pg.InfiniteLine(
-            angle=0, movable=False, pen=pg.mkPen(color=color, width=1.2)
-        )
+        line = pg.InfiniteLine(angle=0, movable=False, pen=pg.mkPen(color=color, width=1.2))
         line.setZValue(90)
         self.view.addItem(line)
         label = pg.InfLineLabel(
@@ -463,18 +445,11 @@ class ChartWidget(QWidget):
             prev_close = self._df.iloc[bar_index - 1]["close"]
         delta = row["close"] - prev_close
         pct = (delta / prev_close * 100) if prev_close else 0.0
-        info = (
-            f"{ts}  |  O {row.open:.5f}  H {row.high:.5f}  "
-            f"L {row.low:.5f}  C {row.close:.5f}  V {row.volume:.0f}  "
-            f"Δ {delta:+.5f} ({pct:+.2f}%)"
-        )
+        info = f"{ts}  |  O {row.open:.5f}  H {row.high:.5f}  " f"L {row.low:.5f}  C {row.close:.5f}  V {row.volume:.0f}  " f"Δ {delta:+.5f} ({pct:+.2f}%)"
         if bar_index is not None:
             info = f"#{bar_index}  " + info
         if self._latest_quote:
-            info += (
-                f"  |  Bid {self._latest_quote['bid']:.5f}  "
-                f"Ask {self._latest_quote['ask']:.5f}"
-            )
+            info += f"  |  Bid {self._latest_quote['bid']:.5f}  " f"Ask {self._latest_quote['ask']:.5f}"
         self.info_label.setText(info)
 
     def _clear_scatter_items(self):

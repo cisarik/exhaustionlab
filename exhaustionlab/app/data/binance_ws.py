@@ -3,6 +3,7 @@ import json
 import time
 
 import websockets
+
 from ...utils.timeframes import to_binance_interval
 
 
@@ -19,9 +20,7 @@ class BinanceWS:
         url = f"wss://stream.binance.com:9443/ws/{stream}"
         while not self._stop.is_set():
             try:
-                async with websockets.connect(
-                    url, ping_interval=20, ping_timeout=20, close_timeout=5
-                ) as ws:
+                async with websockets.connect(url, ping_interval=20, ping_timeout=20, close_timeout=5) as ws:
                     async for msg in ws:
                         if self._stop.is_set():
                             break
@@ -58,9 +57,7 @@ class BinanceBookTickerWS:
         url = f"wss://stream.binance.com:9443/ws/{self.symbol}@bookTicker"
         while not self._stop.is_set():
             try:
-                async with websockets.connect(
-                    url, ping_interval=20, ping_timeout=20, close_timeout=5
-                ) as ws:
+                async with websockets.connect(url, ping_interval=20, ping_timeout=20, close_timeout=5) as ws:
                     async for msg in ws:
                         if self._stop.is_set():
                             break

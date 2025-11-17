@@ -1,0 +1,163 @@
+---
+# GitLab CI/CD Configuration for ExhaustionLab BDD Tests
+
+variables:
+  POETRY_VERSION: "1.7.1"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  POETRY_CACHE_DIR: "$CI_PROJECT_DIR/.cache/poetry"
+
+stages:
+  - test
+  - quality
+  - report
+
+# Cache configuration
+.cache-template: &cache-config
+  cache:
+    key:
+      files:
+        - poetry.lock
+    paths:
+      - .cache/pip
+      - .cache/poetry
+      - .venv
+
+# Base job template
+.python-base:
+  image: python:3.13-slim
+  before_script:
+    - apt-get update && apt-get install -y git
+    - pip install poetry==$POETRY_VERSION
+    - poetry config virtualenvs.in-project true
+    - poetry install --no-interaction --no-ansi
+
+# BDD Tests
+bdd-tests:python3.11:
+  extends: .python-base
+  image: python:3.11-slim
+  stage: test
+  <<: *cache-config
+  script:
+    - poetry run pytest tests/bdd/test_strategy_extraction.py -v --tb=short
+  artifacts:
+    when: always
+    reports:
+      junit: test-results/bdd-junit.xml
+    paths:
+      - htmlcov/
+      - coverage.xml
+    expire_in: 1 week
+
+bdd-tests:python3.12:
+  extends: .python-base
+  image: python:3.12-slim
+  stage: test
+  <<: *cache-config
+  script:
+    - poetry run pytest tests/bdd/test_strategy_extraction.py -v --tb=short
+  artifacts:
+    when: always
+    reports:
+      junit: test-results/bdd-junit.xml
+    expire_in: 1 week
+
+bdd-tests:python3.13:
+  extends: .python-base
+  stage: test
+  <<: *cache-config
+  script:
+    - |
+      poetry run pytest tests/bdd/test_strategy_extraction.py \
+        -v \
+        --cov=exhaustionlab/app/meta_evolution \
+        --cov-report=xml \
+        --cov-report=html \
+        --cov-report=term-missing \
+        --junitxml=test-results/bdd-junit.xml
+  coverage: '/TOTAL.*\s+(\d+%)$/'
+  artifacts:
+    when: always
+    reports:
+      junit: test-results/bdd-junit.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+    paths:
+      - htmlcov/
+      - coverage.xml
+    expire_in: 1 week
+
+# Integration Pipeline Tests
+integration-tests:
+  extends: .python-base
+  stage: test
+  <<: *cache-config
+  needs: ["bdd-tests:python3.13"]
+  script:
+    - |
+      poetry run pytest tests/bdd/test_strategy_extraction.py \
+        -v \
+        -k "pipeline or concurrent or incremental" \
+        --tb=short
+  artifacts:
+    when: always
+    paths:
+      - test-results/
+    expire_in: 1 week
+
+# Code Quality Checks
+code-quality:black:
+  extends: .python-base
+  stage: quality
+  <<: *cache-config
+  script:
+    - poetry run black --check tests/bdd/
+  allow_failure: true
+
+code-quality:ruff:
+  extends: .python-base
+  stage: quality
+  <<: *cache-config
+  script:
+    - poetry run ruff check tests/bdd/
+  allow_failure: true
+
+# Coverage Report
+coverage-report:
+  extends: .python-base
+  stage: report
+  <<: *cache-config
+  needs: ["bdd-tests:python3.13"]
+  script:
+    - |
+      echo "Coverage Summary:"
+      poetry run pytest tests/bdd/test_strategy_extraction.py \
+        --cov=exhaustionlab/app/meta_evolution \
+        --cov-report=term-missing \
+        --cov-fail-under=80
+  artifacts:
+    when: always
+    paths:
+      - htmlcov/
+    expire_in: 30 days
+
+# Scheduled nightly tests
+nightly-full-suite:
+  extends: .python-base
+  stage: test
+  <<: *cache-config
+  only:
+    - schedules
+  script:
+    - |
+      poetry run pytest tests/ \
+        -v \
+        --cov=exhaustionlab \
+        --cov-report=html \
+        --cov-report=term-missing
+  artifacts:
+    when: always
+    paths:
+      - htmlcov/
+      - coverage.xml
+    expire_in: 30 days

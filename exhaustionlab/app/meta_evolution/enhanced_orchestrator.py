@@ -10,43 +10,33 @@ Extends IntelligentOrchestrator with:
 
 from __future__ import annotations
 
-import json
 import logging
-from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
+
 import numpy as np
 
 try:
-    from .intelligent_orchestrator import (
-        IntelligentOrchestrator,
-        EvolutionDirective,
-        IntelligentPrompt,
-    )
-    from .strategy_database import StrategyDatabase, Strategy
-    from .quality_scorer import StrategyQualityScorer
+    from ..llm import LocalLLMClient, PromptContext
     from ..llm.enhanced_prompts import EnhancedPromptBuilder
     from ..llm.example_loader import ExampleLoader
-    from ..llm import LocalLLMClient, PromptContext
+    from .intelligent_orchestrator import EvolutionDirective
+    from .quality_scorer import StrategyQualityScorer
+    from .strategy_database import StrategyDatabase
 except ImportError:
     # Standalone execution
     import sys
     from pathlib import Path
 
     sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-    from exhaustionlab.app.meta_evolution.intelligent_orchestrator import (
-        EvolutionDirective,
-        IntelligentPrompt,
-    )
-    from exhaustionlab.app.meta_evolution.strategy_database import (
-        StrategyDatabase,
-        Strategy,
-    )
-    from exhaustionlab.app.meta_evolution.quality_scorer import StrategyQualityScorer
     from exhaustionlab.app.llm.enhanced_prompts import EnhancedPromptBuilder
     from exhaustionlab.app.llm.example_loader import ExampleLoader
     from exhaustionlab.app.llm.llm_client import LocalLLMClient
     from exhaustionlab.app.llm.prompts import PromptContext
+    from exhaustionlab.app.meta_evolution.intelligent_orchestrator import EvolutionDirective
+    from exhaustionlab.app.meta_evolution.quality_scorer import StrategyQualityScorer
+    from exhaustionlab.app.meta_evolution.strategy_database import StrategyDatabase
 
 
 @dataclass
@@ -153,21 +143,15 @@ class EnhancedOrchestrator:
         self.logger.info(f"🎯 Generating {directive.strategy_type} strategy...")
 
         # Select intelligent examples
-        examples = self._select_intelligent_examples(
-            directive, num_examples, use_best_examples
-        )
+        examples = self._select_intelligent_examples(directive, num_examples, use_best_examples)
 
-        self.logger.info(
-            f"  📚 Using {len(examples)} examples (avg quality: {np.mean([e.quality_score for e in examples]):.1f})"
-        )
+        self.logger.info(f"  📚 Using {len(examples)} examples (avg quality: {np.mean([e.quality_score for e in examples]):.1f})")
 
         # Build context with adaptive parameters
         context = self._build_adaptive_context(directive, adaptation_strength)
 
         # Generate prompt with examples
-        prompt = self.prompt_builder.build_strategy_prompt(
-            context, include_examples=True, num_examples=num_examples
-        )
+        prompt = self.prompt_builder.build_strategy_prompt(context, include_examples=True, num_examples=num_examples)
 
         self.logger.info(f"  📝 Prompt size: {len(prompt)} chars")
 
@@ -240,7 +224,7 @@ class EnhancedOrchestrator:
         Returns:
             Performance feedback
         """
-        self.logger.info(f"🔍 Validating generated strategy...")
+        self.logger.info("🔍 Validating generated strategy...")
 
         # Code validation
         try:
@@ -274,11 +258,7 @@ class EnhancedOrchestrator:
             drawdown = backtest_results.get("max_drawdown", 1)
             win_rate = backtest_results.get("win_rate", 0)
 
-            performance_score = (
-                min(100, sharpe * 40) * 0.4  # Sharpe contribution
-                + (1 - drawdown) * 100 * 0.3  # Drawdown contribution
-                + win_rate * 100 * 0.3  # Win rate contribution
-            )
+            performance_score = min(100, sharpe * 40) * 0.4 + (1 - drawdown) * 100 * 0.3 + win_rate * 100 * 0.3  # Sharpe contribution  # Drawdown contribution  # Win rate contribution
 
             validation_score = quality_score * 0.4 + performance_score * 0.6
 
@@ -287,9 +267,7 @@ class EnhancedOrchestrator:
         self.logger.info(f"  Overall validation: {validation_score:.1f}/100")
 
         # Generate improvement suggestions
-        suggestions = self._generate_suggestions(
-            code, quality_score, backtest_results, issues
-        )
+        suggestions = self._generate_suggestions(code, quality_score, backtest_results, issues)
 
         # Create feedback
         feedback = PerformanceFeedback(
@@ -333,20 +311,14 @@ class EnhancedOrchestrator:
             "total_generations": total_count,
             "avg_quality": np.mean(progression),
             "best_quality": np.max(progression),
-            "recent_avg": (
-                np.mean(progression[-10:])
-                if len(progression) >= 10
-                else np.mean(progression)
-            ),
+            "recent_avg": (np.mean(progression[-10:]) if len(progression) >= 10 else np.mean(progression)),
             "improvement_trend": trend,
             "success_rate": success_count / total_count if total_count > 0 else 0,
             "successful_strategies": success_count,
             "failed_strategies": len(self.learning_state.failed_patterns),
         }
 
-    def _select_intelligent_examples(
-        self, directive: EvolutionDirective, num_examples: int, use_best: bool
-    ) -> List[Any]:
+    def _select_intelligent_examples(self, directive: EvolutionDirective, num_examples: int, use_best: bool) -> List[Any]:
         """Select most relevant examples based on directive and performance."""
 
         if use_best and self.learning_state.best_performers:
@@ -364,13 +336,9 @@ class EnhancedOrchestrator:
         # Map directive to search criteria
         strategy_type = str(directive.strategy_type).lower()
 
-        return self.example_loader.get_examples_by_type(
-            strategy_type, count=num_examples
-        )
+        return self.example_loader.get_examples_by_type(strategy_type, count=num_examples)
 
-    def _build_adaptive_context(
-        self, directive: EvolutionDirective, adaptation_strength: float
-    ) -> PromptContext:
+    def _build_adaptive_context(self, directive: EvolutionDirective, adaptation_strength: float) -> PromptContext:
         """Build context with adaptive parameters."""
 
         # Base context from directive
@@ -393,9 +361,7 @@ class EnhancedOrchestrator:
 
             # Blend with directive indicators
             if successful_indicators:
-                context.indicators_to_include = list(
-                    set(context.indicators_to_include + successful_indicators)
-                )
+                context.indicators_to_include = list(set(context.indicators_to_include + successful_indicators))
 
         return context
 
@@ -466,9 +432,7 @@ Generate production-ready PyneCore code that meets these specifications."""
 
             if common_issues:
                 guidance += "\n\nCommon issues to avoid:\n"
-                for issue, count in sorted(
-                    common_issues.items(), key=lambda x: x[1], reverse=True
-                )[:3]:
+                for issue, count in sorted(common_issues.items(), key=lambda x: x[1], reverse=True)[:3]:
                     guidance += f"  - {issue} (occurred {count} times)\n"
 
         return guidance
@@ -484,31 +448,23 @@ Generate production-ready PyneCore code that meets these specifications."""
         suggestions = []
 
         if quality_score < 70:
-            suggestions.append(
-                "Improve code quality: add comments, fix syntax, use proper API"
-            )
+            suggestions.append("Improve code quality: add comments, fix syntax, use proper API")
 
         if backtest_results:
             sharpe = backtest_results.get("sharpe_ratio", 0)
             drawdown = backtest_results.get("max_drawdown", 1)
 
             if sharpe < 1.0:
-                suggestions.append(
-                    "Improve Sharpe ratio: refine entry/exit conditions or risk management"
-                )
+                suggestions.append("Improve Sharpe ratio: refine entry/exit conditions or risk management")
 
             if drawdown > 0.2:
-                suggestions.append(
-                    "Reduce drawdown: add stop loss, position sizing, or trend filters"
-                )
+                suggestions.append("Reduce drawdown: add stop loss, position sizing, or trend filters")
 
         if "Syntax errors" in issues:
             suggestions.append("Fix syntax errors before testing")
 
         if "Invalid API usage" in issues:
-            suggestions.append(
-                "Review PyneCore API documentation and use correct functions"
-            )
+            suggestions.append("Review PyneCore API documentation and use correct functions")
 
         return suggestions
 

@@ -4,10 +4,11 @@ Test GitHub Strategy Crawler
 TDD Approach: Write tests first, then implement.
 """
 
-import pytest
 import sys
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 # Direct import to avoid broken __init__.py dependencies
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "exhaustionlab"))
@@ -77,9 +78,7 @@ class TestGitHubSearchMocked:
 
         # Test
         crawler = GitHubStrategyCrawler()
-        results = crawler.search_strategies(
-            query="trading strategy", min_stars=10, max_results=5
-        )
+        results = crawler.search_strategies(query="trading strategy", min_stars=10, max_results=5)
 
         # Assertions
         assert len(results) > 0
@@ -140,11 +139,7 @@ class TestGitHubCodeExtraction:
         # Mock search response
         search_response = Mock()
         search_response.status_code = 200
-        search_response.json.return_value = {
-            "items": [
-                {"url": "https://api.github.com/repos/user/repo/contents/strategy.pine"}
-            ]
-        }
+        search_response.json.return_value = {"items": [{"url": "https://api.github.com/repos/user/repo/contents/strategy.pine"}]}
         search_response.headers = {
             "X-RateLimit-Remaining": "5000",
             "X-RateLimit-Reset": "9999999999",
@@ -156,9 +151,7 @@ class TestGitHubCodeExtraction:
         code = "//@version=5\nindicator('Test')\nplot(close)"
         content_response = Mock()
         content_response.status_code = 200
-        content_response.json.return_value = {
-            "content": base64.b64encode(code.encode()).decode()
-        }
+        content_response.json.return_value = {"content": base64.b64encode(code.encode()).decode()}
 
         mock_get.side_effect = [search_response, content_response]
 
@@ -196,9 +189,7 @@ class TestGitHubIntegration:
         """Test real search for Pine Script strategies."""
         crawler = GitHubStrategyCrawler()
 
-        results = crawler.search_strategies(
-            query="pinescript trading strategy", min_stars=10, max_results=3
-        )
+        results = crawler.search_strategies(query="pinescript trading strategy", min_stars=10, max_results=3)
 
         # Should find at least some strategies
         assert len(results) > 0

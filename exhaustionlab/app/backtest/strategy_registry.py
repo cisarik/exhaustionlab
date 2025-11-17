@@ -10,11 +10,11 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
-from dataclasses import dataclass, asdict
+import uuid
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
-import uuid
+from typing import Any, Dict, List, Optional
 
 from .strategy_genome import StrategyGenome
 
@@ -54,29 +54,13 @@ class StrategyMetrics:
         }
 
         # Normalized metrics (0-1 scale, higher is better)
-        normalized_pnl = min(
-            1.0, max(0.0, self.total_pnl / 1000)
-        )  # Assuming 1000% is excellent
-        normalized_sharpe = min(
-            1.0, max(0.0, self.sharpe_ratio / 3.0)
-        )  # Sharpe > 3 is excellent
-        normalized_drawdown = max(
-            0.0, 1.0 - (self.max_drawdown / 0.5)
-        )  # 50% DD is terrible
+        normalized_pnl = min(1.0, max(0.0, self.total_pnl / 1000))  # Assuming 1000% is excellent
+        normalized_sharpe = min(1.0, max(0.0, self.sharpe_ratio / 3.0))  # Sharpe > 3 is excellent
+        normalized_drawdown = max(0.0, 1.0 - (self.max_drawdown / 0.5))  # 50% DD is terrible
         normalized_winrate = self.win_rate
-        consistency = (
-            1.0 - (self.downside_deviation / self.volatility_adjusted_return)
-            if self.volatility_adjusted_return > 0
-            else 0
-        )
+        consistency = 1.0 - (self.downside_deviation / self.volatility_adjusted_return) if self.volatility_adjusted_return > 0 else 0
 
-        fitness = (
-            w["pnl"] * normalized_pnl
-            + w["sharpe"] * normalized_sharpe
-            + w["drawdown"] * normalized_drawdown
-            + w["win_rate"] * normalized_winrate
-            + w["consistency"] * min(1.0, max(0.0, consistency))
-        )
+        fitness = w["pnl"] * normalized_pnl + w["sharpe"] * normalized_sharpe + w["drawdown"] * normalized_drawdown + w["win_rate"] * normalized_winrate + w["consistency"] * min(1.0, max(0.0, consistency))
 
         return fitness
 
@@ -169,18 +153,16 @@ class StrategyRegistry:
 
             conn.executescript(
                 """
-                CREATE INDEX IF NOT EXISTS idx_strategy_fitness 
+                CREATE INDEX IF NOT EXISTS idx_strategy_fitness
                     ON strategies(fitness DESC);
-                CREATE INDEX IF NOT EXISTS idx_strategy_deployment 
+                CREATE INDEX IF NOT EXISTS idx_strategy_deployment
                     ON strategies(deployment_score DESC);
-                CREATE INDEX IF NOT EXISTS idx_metrics_market 
+                CREATE INDEX IF NOT EXISTS idx_metrics_market
                     ON strategy_metrics(market, timeframe);
             """
             )
 
-    def save_strategy(
-        self, genome: StrategyGenome, version_description: str = ""
-    ) -> str:
+    def save_strategy(self, genome: StrategyGenome, version_description: str = "") -> str:
         """Save strategy with version control."""
         strategy_id = str(uuid.uuid4())
         commit_hash = self._generate_commit_hash(genome.pyne_code, genome.parameters)
@@ -189,8 +171,8 @@ class StrategyRegistry:
             # Insert main strategy
             conn.execute(
                 """
-                INSERT INTO strategies 
-                (strategy_id, name, description, pyne_code, pine_code, parameters, 
+                INSERT INTO strategies
+                (strategy_id, name, description, pyne_code, pine_code, parameters,
                  parent_strategy_id, generation, fitness, total_tests, markets_tested, tags)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
@@ -247,7 +229,7 @@ class StrategyRegistry:
         conn.execute(
             """
             INSERT INTO strategy_versions
-            (version_id, strategy_id, version_number, parent_version_id, 
+            (version_id, strategy_id, version_number, parent_version_id,
              commit_hash, pyne_code, parameters, description, tags)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
@@ -281,7 +263,7 @@ class StrategyRegistry:
             conn.execute(
                 """
                 INSERT INTO strategy_metrics
-                (metrics_id, strategy_id, version_id, market, timeframe, 
+                (metrics_id, strategy_id, version_id, market, timeframe,
                  test_start, test_end, metrics_data)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
@@ -300,14 +282,14 @@ class StrategyRegistry:
             # Update strategy's aggregate metrics
             conn.execute(
                 """
-                UPDATE strategies 
+                UPDATE strategies
                 SET fitness = COALESCE((
-                    SELECT AVG(json_extract(metrics_data, '$.composite_fitness')) 
-                    FROM strategy_metrics 
+                    SELECT AVG(json_extract(metrics_data, '$.composite_fitness'))
+                    FROM strategy_metrics
                     WHERE strategy_id = ? AND version_id = ?
                 ), 0.0),
                 total_tests = COALESCE((
-                    SELECT COUNT(*) FROM strategy_metrics 
+                    SELECT COUNT(*) FROM strategy_metrics
                     WHERE strategy_id = ? AND version_id = ?
                 ), 0)
                 WHERE strategy_id = ?
@@ -319,26 +301,20 @@ class StrategyRegistry:
         """Retrieve complete strategy information."""
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
-            row = conn.execute(
-                "SELECT * FROM strategies WHERE strategy_id = ?", (strategy_id,)
-            ).fetchone()
+            row = conn.execute("SELECT * FROM strategies WHERE strategy_id = ?", (strategy_id,)).fetchone()
 
             if row:
                 strategy = dict(row)
                 strategy["parameters"] = json.loads(strategy["parameters"])
-                strategy["markets_tested"] = json.loads(
-                    strategy.get("markets_tested", "[]")
-                )
+                strategy["markets_tested"] = json.loads(strategy.get("markets_tested", "[]"))
                 strategy["tags"] = json.loads(strategy.get("tags", "[]"))
                 return strategy
         return None
 
-    def get_best_strategies(
-        self, limit: int = 10, min_tests: int = 3, markets: Optional[List[str]] = None
-    ) -> List[Dict[str, Any]]:
+    def get_best_strategies(self, limit: int = 10, min_tests: int = 3, markets: Optional[List[str]] = None) -> List[Dict[str, Any]]:
         """Get top strategies by comprehensive fitness with robustness requirements."""
         query = """
-            SELECT s.*, 
+            SELECT s.*,
                    COUNT(sm.metrics_id) as test_count,
                    COUNT(DISTINCT sm.market) as market_diversity
             FROM strategies s
@@ -356,7 +332,7 @@ class StrategyRegistry:
             query += f" AND s.strategy_id IN (SELECT strategy_id FROM strategy_metrics WHERE market IN ({placeholders}))"
             params.extend(markets)
 
-        query += f" GROUP BY s.strategy_id ORDER BY s.fitness DESC, market_diversity DESC LIMIT ?"
+        query += " GROUP BY s.strategy_id ORDER BY s.fitness DESC, market_diversity DESC LIMIT ?"
         params.append(limit)
 
         with sqlite3.connect(self.db_path) as conn:
@@ -367,9 +343,7 @@ class StrategyRegistry:
             for row in rows:
                 strategy = dict(row)
                 strategy["parameters"] = json.loads(strategy["parameters"])
-                strategy["markets_tested"] = json.loads(
-                    strategy.get("markets_tested", "[]")
-                )
+                strategy["markets_tested"] = json.loads(strategy.get("markets_tested", "[]"))
                 strategies.append(strategy)
 
             return strategies
@@ -385,7 +359,7 @@ class StrategyRegistry:
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
                 """
-                UPDATE strategy_versions 
+                UPDATE strategy_versions
                 SET deployment_ready = ?, validation_passed = ?
                 WHERE version_id = ?
             """,
@@ -396,9 +370,9 @@ class StrategyRegistry:
             if ready:
                 conn.execute(
                     """
-                    UPDATE strategies 
+                    UPDATE strategies
                     SET deployment_score = (
-                        SELECT AVG(fitness) 
+                        SELECT AVG(fitness)
                         FROM strategy_metrics sm
                         JOIN strategy_versions sv ON sm.version_id = sv.version_id
                         WHERE sm.strategy_id = ? AND sv.deployment_ready = TRUE
@@ -408,21 +382,19 @@ class StrategyRegistry:
                     (strategy_id, strategy_id),
                 )
 
-    def get_deployment_ready_strategies(
-        self, min_markets: int = 2
-    ) -> List[Dict[str, Any]]:
+    def get_deployment_ready_strategies(self, min_markets: int = 2) -> List[Dict[str, Any]]:
         """Get strategies validated for real-time trading."""
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             rows = conn.execute(
                 """
-                SELECT s.*, 
+                SELECT s.*,
                        COUNT(DISTINCT sm.market) as tested_markets,
                        COUNT(sm.metrics_id) as total_tests
                 FROM strategies s
                 JOIN strategy_versions sv ON s.current_version_id = sv.version_id
                 LEFT JOIN strategy_metrics sm ON s.strategy_id = sm.strategy_id
-                WHERE sv.deployment_ready = TRUE 
+                WHERE sv.deployment_ready = TRUE
                   AND sv.validation_passed = TRUE
                 GROUP BY s.strategy_id
                 HAVING tested_markets >= ?
@@ -439,15 +411,13 @@ class StrategyRegistry:
 
             return strategies
 
-    def get_top_strategies(
-        self, limit: int = 10, include_metrics: bool = True
-    ) -> List[Dict[str, Any]]:
+    def get_top_strategies(self, limit: int = 10, include_metrics: bool = True) -> List[Dict[str, Any]]:
         """Return top strategies ordered by composite fitness."""
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             rows = conn.execute(
                 """
-                SELECT s.* 
+                SELECT s.*
                 FROM strategies s
                 ORDER BY s.fitness DESC, s.generation DESC
                 LIMIT ?
@@ -459,21 +429,15 @@ class StrategyRegistry:
         for row in rows:
             strategy = dict(row)
             strategy["parameters"] = json.loads(strategy["parameters"])
-            strategy["markets_tested"] = json.loads(
-                strategy.get("markets_tested", "[]")
-            )
+            strategy["markets_tested"] = json.loads(strategy.get("markets_tested", "[]"))
             strategy["tags"] = json.loads(strategy.get("tags", "[]"))
             if include_metrics:
-                strategy["recent_metrics"] = self.get_recent_metrics(
-                    strategy["strategy_id"], 3
-                )
+                strategy["recent_metrics"] = self.get_recent_metrics(strategy["strategy_id"], 3)
             strategies.append(strategy)
 
         return strategies
 
-    def get_recent_metrics(
-        self, strategy_id: str, limit: int = 5
-    ) -> List[Dict[str, Any]]:
+    def get_recent_metrics(self, strategy_id: str, limit: int = 5) -> List[Dict[str, Any]]:
         """Fetch most recent backtest metrics for a strategy."""
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
@@ -521,9 +485,7 @@ class StrategyRegistry:
         content = f"{pyne_code}{json.dumps(parameters, sort_keys=True)}"
         return hashlib.sha256(content.encode()).hexdigest()[:12]
 
-    def create_strategy_variant(
-        self, strategy_id: str, variant_config: Dict[str, Any]
-    ) -> str:
+    def create_strategy_variant(self, strategy_id: str, variant_config: Dict[str, Any]) -> str:
         """Create x variants of a strategy with different parameter configurations."""
         strategy = self.get_strategy(strategy_id)
         if not strategy:

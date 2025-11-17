@@ -1,4 +1,4 @@
-from pynecore import Series, input, plot, color, script
+from pynecore import Series, color, input, plot, script
 from pynecore.lib import close
 
 

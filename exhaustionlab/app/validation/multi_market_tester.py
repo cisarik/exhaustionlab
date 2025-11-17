@@ -14,22 +14,17 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from dataclasses import dataclass, field, asdict
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any, Callable
-import json
-import tempfile
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
 from enum import Enum
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 from ..data.binance_rest import fetch_klines_csv_like
-from ..meta_evolution.performance_metrics import (
-    calculate_comprehensive_metrics,
-    PerformanceMetrics,
-)
+from ..meta_evolution.performance_metrics import PerformanceMetrics, calculate_comprehensive_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -122,12 +117,8 @@ class TestResult:
             "data_points": self.data_points,
             "validation_passed": self.validation_passed,
             "validation_errors": self.validation_errors,
-            "detected_regime": (
-                self.detected_regime.value if self.detected_regime else None
-            ),
-            "detected_volatility": (
-                self.detected_volatility.value if self.detected_volatility else None
-            ),
+            "detected_regime": (self.detected_regime.value if self.detected_regime else None),
+            "detected_volatility": (self.detected_volatility.value if self.detected_volatility else None),
             "market_return": self.market_return,
         }
 
@@ -280,10 +271,7 @@ class EnhancedMultiMarketTester:
                 )
                 configs.append(config)
 
-        logger.info(
-            f"Created test matrix: {len(symbols)} symbols × "
-            f"{len(timeframes)} timeframes = {len(configs)} tests"
-        )
+        logger.info(f"Created test matrix: {len(symbols)} symbols × " f"{len(timeframes)} timeframes = {len(configs)} tests")
 
         return configs
 
@@ -315,9 +303,7 @@ class EnhancedMultiMarketTester:
 
         async def test_with_semaphore(config: MarketTestConfig) -> TestResult:
             async with semaphore:
-                return await self._test_single_market(
-                    strategy_func, config, min_quality_score, min_sharpe
-                )
+                return await self._test_single_market(strategy_func, config, min_quality_score, min_sharpe)
 
         tasks = [test_with_semaphore(config) for config in test_configs]
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -326,10 +312,7 @@ class EnhancedMultiMarketTester:
         valid_results = []
         for i, result in enumerate(results):
             if isinstance(result, Exception):
-                logger.error(
-                    f"Test failed for {test_configs[i].symbol} "
-                    f"{test_configs[i].timeframe}: {result}"
-                )
+                logger.error(f"Test failed for {test_configs[i].symbol} " f"{test_configs[i].timeframe}: {result}")
             else:
                 valid_results.append(result)
 
@@ -339,10 +322,7 @@ class EnhancedMultiMarketTester:
         # Aggregate results
         aggregated = self._aggregate_results(valid_results)
 
-        logger.info(
-            f"Testing complete: {aggregated.markets_passed}/{len(valid_results)} passed "
-            f"(pass rate: {aggregated.pass_rate:.1%})"
-        )
+        logger.info(f"Testing complete: {aggregated.markets_passed}/{len(valid_results)} passed " f"(pass rate: {aggregated.pass_rate:.1%})")
 
         return aggregated
 
@@ -369,9 +349,7 @@ class EnhancedMultiMarketTester:
 
             # Apply slippage and fees if enabled
             if config.enable_slippage or config.enable_fees:
-                trades_df = self._apply_transaction_costs(
-                    trades_df, config.slippage_bps, config.fee_bps
-                )
+                trades_df = self._apply_transaction_costs(trades_df, config.slippage_bps, config.fee_bps)
                 equity_curve = self._recalculate_equity(trades_df)
 
             # Calculate returns
@@ -385,9 +363,7 @@ class EnhancedMultiMarketTester:
             )
 
             # Validate results
-            validation_passed, errors = self._validate_results(
-                metrics, trades_df, min_quality_score, min_sharpe, config.min_trades
-            )
+            validation_passed, errors = self._validate_results(metrics, trades_df, min_quality_score, min_sharpe, config.min_trades)
 
             # Calculate market return for comparison
             market_return = (df["close"].iloc[-1] / df["close"].iloc[0]) - 1.0
@@ -419,9 +395,7 @@ class EnhancedMultiMarketTester:
 
         # Check cache
         if cache_file.exists():
-            file_age = datetime.now() - datetime.fromtimestamp(
-                cache_file.stat().st_mtime
-            )
+            file_age = datetime.now() - datetime.fromtimestamp(cache_file.stat().st_mtime)
             if file_age.days < self.cache_ttl_days:
                 df = pd.read_csv(cache_file)
                 if len(df) >= 100:  # Minimum data points
@@ -436,9 +410,7 @@ class EnhancedMultiMarketTester:
         )
 
         if len(df) < 100:
-            raise ValueError(
-                f"Insufficient data for {config.symbol} {config.timeframe}"
-            )
+            raise ValueError(f"Insufficient data for {config.symbol} {config.timeframe}")
 
         # Cache it
         df.to_csv(cache_file, index=False)
@@ -542,9 +514,7 @@ class EnhancedMultiMarketTester:
 
         # Check quality score
         if metrics.quality_score < min_quality_score:
-            errors.append(
-                f"Low quality score: {metrics.quality_score:.1f} < {min_quality_score}"
-            )
+            errors.append(f"Low quality score: {metrics.quality_score:.1f} < {min_quality_score}")
 
         # Check Sharpe ratio
         if metrics.sharpe_ratio < min_sharpe:
@@ -580,8 +550,7 @@ class EnhancedMultiMarketTester:
             timeframe_perf[tf] = {
                 "mean_sharpe": np.mean([r.metrics.sharpe_ratio for r in tf_results]),
                 "mean_quality": np.mean([r.metrics.quality_score for r in tf_results]),
-                "pass_rate": sum(1 for r in tf_results if r.validation_passed)
-                / len(tf_results),
+                "pass_rate": sum(1 for r in tf_results if r.validation_passed) / len(tf_results),
             }
 
         # Per-symbol performance
@@ -591,8 +560,7 @@ class EnhancedMultiMarketTester:
             symbol_perf[symbol] = {
                 "mean_sharpe": np.mean([r.metrics.sharpe_ratio for r in sym_results]),
                 "mean_quality": np.mean([r.metrics.quality_score for r in sym_results]),
-                "pass_rate": sum(1 for r in sym_results if r.validation_passed)
-                / len(sym_results),
+                "pass_rate": sum(1 for r in sym_results if r.validation_passed) / len(sym_results),
             }
 
         # Per-regime performance
@@ -600,14 +568,9 @@ class EnhancedMultiMarketTester:
         for regime in set(r.detected_regime for r in results if r.detected_regime):
             regime_results = [r for r in results if r.detected_regime == regime]
             regime_perf[regime.value] = {
-                "mean_sharpe": np.mean(
-                    [r.metrics.sharpe_ratio for r in regime_results]
-                ),
-                "mean_quality": np.mean(
-                    [r.metrics.quality_score for r in regime_results]
-                ),
-                "pass_rate": sum(1 for r in regime_results if r.validation_passed)
-                / len(regime_results),
+                "mean_sharpe": np.mean([r.metrics.sharpe_ratio for r in regime_results]),
+                "mean_quality": np.mean([r.metrics.quality_score for r in regime_results]),
+                "pass_rate": sum(1 for r in regime_results if r.validation_passed) / len(regime_results),
             }
 
         # Statistical tests - confidence interval for Sharpe
@@ -643,9 +606,7 @@ class EnhancedMultiMarketTester:
             individual_results=results,
         )
 
-    def generate_report(
-        self, results: AggregatedResults, output_path: Optional[Path] = None
-    ) -> str:
+    def generate_report(self, results: AggregatedResults, output_path: Optional[Path] = None) -> str:
         """Generate human-readable test report."""
         lines = [
             "=" * 80,

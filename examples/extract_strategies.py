@@ -10,33 +10,24 @@ Extracts trading strategies from multiple sources:
 Scores quality and stores in knowledge base.
 """
 
-import sys
-import os
 import logging
-from pathlib import Path
-from typing import List, Dict, Any
+import os
+import sys
+from typing import Any, Dict, List
 
 # Setup logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # Add to path
 sys.path.insert(0, os.path.dirname(__file__))
 
 # Import crawlers
-from exhaustionlab.app.meta_evolution.crawlers.github_crawler import (
-    GitHubStrategyCrawler,
-)
-from exhaustionlab.app.meta_evolution.crawlers.reddit_crawler import (
-    RedditStrategyCrawler,
-)
-from exhaustionlab.app.meta_evolution.crawlers.tradingview_scraper import (
-    TradingViewScraper,
-)
-from exhaustionlab.app.meta_evolution.quality_scorer import StrategyQualityScorer
+from exhaustionlab.app.meta_evolution.crawlers.github_crawler import GitHubStrategyCrawler
+from exhaustionlab.app.meta_evolution.crawlers.reddit_crawler import RedditStrategyCrawler
+from exhaustionlab.app.meta_evolution.crawlers.tradingview_scraper import TradingViewScraper
 from exhaustionlab.app.meta_evolution.knowledge_base_storage import KnowledgeBaseStorage
+from exhaustionlab.app.meta_evolution.quality_scorer import StrategyQualityScorer
 
 
 class StrategyExtractor:
@@ -66,9 +57,7 @@ class StrategyExtractor:
 
             # Score quality
             for strategy in results:
-                strategy["quality_score"] = self.quality_scorer.calculate_quality_score(
-                    strategy
-                )
+                strategy["quality_score"] = self.quality_scorer.calculate_quality_score(strategy)
 
             return results
 
@@ -92,9 +81,7 @@ class StrategyExtractor:
 
             # Score quality
             for strategy in results:
-                strategy["quality_score"] = self.quality_scorer.calculate_quality_score(
-                    strategy
-                )
+                strategy["quality_score"] = self.quality_scorer.calculate_quality_score(strategy)
 
             return results
 
@@ -114,9 +101,7 @@ class StrategyExtractor:
 
             # Score quality
             for strategy in results:
-                strategy["quality_score"] = self.quality_scorer.calculate_quality_score(
-                    strategy
-                )
+                strategy["quality_score"] = self.quality_scorer.calculate_quality_score(strategy)
 
             return results
 
@@ -150,9 +135,7 @@ class StrategyExtractor:
 
         return results
 
-    def save_to_knowledge_base(
-        self, results: Dict[str, List[Dict[str, Any]]]
-    ) -> Dict[str, int]:
+    def save_to_knowledge_base(self, results: Dict[str, List[Dict[str, Any]]]) -> Dict[str, int]:
         """
         Save extracted strategies to knowledge base.
 
@@ -186,9 +169,7 @@ class StrategyExtractor:
         for idx, strategy in enumerate(top, 1):
             quality = strategy.get("quality_score", 0)
             category = self.quality_scorer.get_quality_category(quality)
-            logger.info(
-                f"   {idx}. {strategy.get('name', 'Unknown')[:50]} - {quality:.1f} ({category})"
-            )
+            logger.info(f"   {idx}. {strategy.get('name', 'Unknown')[:50]} - {quality:.1f} ({category})")
 
         return top
 
@@ -213,27 +194,13 @@ def main():
     """Main extraction flow."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Extract trading strategies from multiple sources"
-    )
-    parser.add_argument(
-        "--github", type=int, default=50, help="GitHub limit (default: 50)"
-    )
-    parser.add_argument(
-        "--reddit", type=int, default=30, help="Reddit limit (default: 30)"
-    )
-    parser.add_argument(
-        "--tradingview", type=int, default=20, help="TradingView limit (default: 20)"
-    )
-    parser.add_argument(
-        "--quick", action="store_true", help="Quick extraction (20 total)"
-    )
-    parser.add_argument(
-        "--full", action="store_true", help="Full extraction (100 total)"
-    )
-    parser.add_argument(
-        "--stats-only", action="store_true", help="Show statistics only"
-    )
+    parser = argparse.ArgumentParser(description="Extract trading strategies from multiple sources")
+    parser.add_argument("--github", type=int, default=50, help="GitHub limit (default: 50)")
+    parser.add_argument("--reddit", type=int, default=30, help="Reddit limit (default: 30)")
+    parser.add_argument("--tradingview", type=int, default=20, help="TradingView limit (default: 20)")
+    parser.add_argument("--quick", action="store_true", help="Quick extraction (20 total)")
+    parser.add_argument("--full", action="store_true", help="Full extraction (100 total)")
+    parser.add_argument("--stats-only", action="store_true", help="Show statistics only")
 
     args = parser.parse_args()
 

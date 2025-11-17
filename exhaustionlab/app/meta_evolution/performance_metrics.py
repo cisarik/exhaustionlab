@@ -10,11 +10,12 @@ Institutional-quality metrics for strategy evaluation:
 
 from __future__ import annotations
 
+import logging
+from dataclasses import dataclass, field
+from typing import List, Optional, Tuple
+
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass, field
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -89,19 +90,12 @@ class PerformanceMetrics:
         # Consistency component (10%)
         consistency_component = self.consistency_score * 0.10
 
-        total_score = (
-            sharpe_component
-            + risk_component
-            + trading_component
-            + consistency_component
-        )
+        total_score = sharpe_component + risk_component + trading_component + consistency_component
 
         return min(100.0, max(0.0, total_score))
 
 
-def calculate_sharpe_ratio(
-    returns: pd.Series, risk_free_rate: float = 0.02, trading_days: int = 252
-) -> float:
+def calculate_sharpe_ratio(returns: pd.Series, risk_free_rate: float = 0.02, trading_days: int = 252) -> float:
     """
     Calculate annualized Sharpe ratio from returns series.
 
@@ -137,9 +131,7 @@ def calculate_sharpe_ratio(
     return float(sharpe)
 
 
-def calculate_sortino_ratio(
-    returns: pd.Series, risk_free_rate: float = 0.02, trading_days: int = 252
-) -> float:
+def calculate_sortino_ratio(returns: pd.Series, risk_free_rate: float = 0.02, trading_days: int = 252) -> float:
     """
     Calculate Sortino ratio (like Sharpe but only penalizes downside volatility).
 
@@ -194,25 +186,20 @@ def calculate_max_drawdown(equity_curve: pd.Series) -> Tuple[float, int]:
     max_dd = drawdown.min()
 
     # Duration: count days from peak to recovery
-    in_drawdown = False
     current_duration = 0
     max_duration = 0
 
     for dd in drawdown:
         if dd < 0:
-            in_drawdown = True
             current_duration += 1
             max_duration = max(max_duration, current_duration)
         else:
-            in_drawdown = False
             current_duration = 0
 
     return float(max_dd), int(max_duration)
 
 
-def calculate_calmar_ratio(
-    returns: pd.Series, equity_curve: pd.Series, trading_days: int = 252
-) -> float:
+def calculate_calmar_ratio(returns: pd.Series, equity_curve: pd.Series, trading_days: int = 252) -> float:
     """
     Calculate Calmar ratio (annualized return / max drawdown).
 
@@ -269,9 +256,7 @@ def calculate_ulcer_index(equity_curve: pd.Series) -> float:
     return float(ulcer)
 
 
-def calculate_var_cvar(
-    returns: pd.Series, confidence_level: float = 0.95
-) -> Tuple[float, float]:
+def calculate_var_cvar(returns: pd.Series, confidence_level: float = 0.95) -> Tuple[float, float]:
     """
     Calculate Value at Risk and Conditional VaR (Expected Shortfall).
 
@@ -397,15 +382,9 @@ def calculate_comprehensive_metrics(
             metrics.annualized_return = (1 + metrics.total_return) ** (1 / years) - 1
 
         # Risk-adjusted metrics
-        metrics.sharpe_ratio = calculate_sharpe_ratio(
-            returns, risk_free_rate, trading_days
-        )
-        metrics.sortino_ratio = calculate_sortino_ratio(
-            returns, risk_free_rate, trading_days
-        )
-        metrics.calmar_ratio = calculate_calmar_ratio(
-            returns, equity_curve, trading_days
-        )
+        metrics.sharpe_ratio = calculate_sharpe_ratio(returns, risk_free_rate, trading_days)
+        metrics.sortino_ratio = calculate_sortino_ratio(returns, risk_free_rate, trading_days)
+        metrics.calmar_ratio = calculate_calmar_ratio(returns, equity_curve, trading_days)
 
         # Risk metrics
         metrics.volatility = returns.std() * np.sqrt(trading_days)
@@ -414,9 +393,7 @@ def calculate_comprehensive_metrics(
         if len(downside_returns) > 0:
             metrics.downside_deviation = downside_returns.std() * np.sqrt(trading_days)
 
-        metrics.max_drawdown, metrics.max_drawdown_duration = calculate_max_drawdown(
-            equity_curve
-        )
+        metrics.max_drawdown, metrics.max_drawdown_duration = calculate_max_drawdown(equity_curve)
         metrics.ulcer_index = calculate_ulcer_index(equity_curve)
 
         # VaR metrics
@@ -429,9 +406,7 @@ def calculate_comprehensive_metrics(
             metrics.monthly_returns = returns_monthly.tolist()
             metrics.months_positive = (returns_monthly > 0).sum()
             metrics.months_negative = (returns_monthly < 0).sum()
-            metrics.consistency_score = calculate_consistency_score(
-                metrics.monthly_returns
-            )
+            metrics.consistency_score = calculate_consistency_score(metrics.monthly_returns)
 
         # Trading statistics from trades DataFrame
         if trades is not None and not trades.empty:
@@ -463,10 +438,7 @@ def calculate_comprehensive_metrics(
             if monthly_series.std() > 0:
                 metrics.stability_ratio = monthly_series.mean() / monthly_series.std()
 
-        logger.info(
-            f"Calculated metrics: Sharpe={metrics.sharpe_ratio:.2f}, "
-            f"MaxDD={metrics.max_drawdown:.2%}, Quality={metrics.quality_score:.1f}"
-        )
+        logger.info(f"Calculated metrics: Sharpe={metrics.sharpe_ratio:.2f}, " f"MaxDD={metrics.max_drawdown:.2%}, Quality={metrics.quality_score:.1f}")
 
     except Exception as e:
         logger.error(f"Error calculating metrics: {e}")
@@ -489,16 +461,16 @@ def format_metrics_report(metrics: PerformanceMetrics) -> str:
     report.append("PERFORMANCE METRICS REPORT")
     report.append("=" * 70)
 
-    report.append(f"\n📊 RETURN METRICS:")
+    report.append("\n📊 RETURN METRICS:")
     report.append(f"  Total Return: {metrics.total_return:+.2%}")
     report.append(f"  Annualized Return: {metrics.annualized_return:+.2%}")
 
-    report.append(f"\n📈 RISK-ADJUSTED METRICS:")
+    report.append("\n📈 RISK-ADJUSTED METRICS:")
     report.append(f"  Sharpe Ratio: {metrics.sharpe_ratio:.2f}")
     report.append(f"  Sortino Ratio: {metrics.sortino_ratio:.2f}")
     report.append(f"  Calmar Ratio: {metrics.calmar_ratio:.2f}")
 
-    report.append(f"\n⚠️ RISK METRICS:")
+    report.append("\n⚠️ RISK METRICS:")
     report.append(f"  Volatility: {metrics.volatility:.2%}")
     report.append(f"  Max Drawdown: {metrics.max_drawdown:.2%}")
     report.append(f"  Drawdown Duration: {metrics.max_drawdown_duration} days")
@@ -507,7 +479,7 @@ def format_metrics_report(metrics: PerformanceMetrics) -> str:
     report.append(f"  CVaR (95%): {metrics.cvar_95:.2%}")
 
     if metrics.total_trades > 0:
-        report.append(f"\n💰 TRADING STATISTICS:")
+        report.append("\n💰 TRADING STATISTICS:")
         report.append(f"  Total Trades: {metrics.total_trades}")
         report.append(f"  Win Rate: {metrics.win_rate:.1%}")
         report.append(f"  Profit Factor: {metrics.profit_factor:.2f}")
@@ -515,7 +487,7 @@ def format_metrics_report(metrics: PerformanceMetrics) -> str:
         report.append(f"  Avg Loss: {metrics.avg_loss:+.2%}")
 
     if metrics.monthly_returns:
-        report.append(f"\n🎯 CONSISTENCY:")
+        report.append("\n🎯 CONSISTENCY:")
         report.append(f"  Consistency Score: {metrics.consistency_score:.1f}/100")
         report.append(f"  Positive Months: {metrics.months_positive}")
         report.append(f"  Negative Months: {metrics.months_negative}")
@@ -554,18 +526,14 @@ if __name__ == "__main__":
 
     # Calculate equity curve
     equity = (1 + daily_returns).cumprod() * 10000
-    equity_curve = pd.Series(
-        equity.values, index=pd.date_range("2024-01-01", periods=days)
-    )
+    equity_curve = pd.Series(equity.values, index=pd.date_range("2024-01-01", periods=days))
 
     # Simulate trades
     trades = pd.DataFrame({"pnl": np.random.randn(50) * 0.03})
 
     print("📊 Calculating comprehensive metrics...")
-    metrics = calculate_comprehensive_metrics(
-        returns=daily_returns, equity_curve=equity_curve, trades=trades
-    )
+    metrics = calculate_comprehensive_metrics(returns=daily_returns, equity_curve=equity_curve, trades=trades)
 
     print(format_metrics_report(metrics))
 
-    print(f"\n✅ Performance metrics module operational!")
+    print("\n✅ Performance metrics module operational!")

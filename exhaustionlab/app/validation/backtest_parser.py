@@ -15,10 +15,10 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -190,9 +190,7 @@ class BacktestParser:
             },
         )
 
-        logger.info(
-            f"Parsed {len(trades)} trades, return: {metrics['total_return']:.2%}"
-        )
+        logger.info(f"Parsed {len(trades)} trades, return: {metrics['total_return']:.2%}")
 
         return result
 
@@ -363,16 +361,8 @@ class BacktestParser:
             total_loss = abs(sum(t.pnl for t in losing_trades))
             profit_factor = total_profit / total_loss if total_loss > 0 else 0
 
-            avg_win = (
-                sum(t.pnl for t in winning_trades) / len(winning_trades)
-                if winning_trades
-                else 0
-            )
-            avg_loss = (
-                sum(t.pnl for t in losing_trades) / len(losing_trades)
-                if losing_trades
-                else 0
-            )
+            avg_win = sum(t.pnl for t in winning_trades) / len(winning_trades) if winning_trades else 0
+            avg_loss = sum(t.pnl for t in losing_trades) / len(losing_trades) if losing_trades else 0
 
             largest_win = max((t.pnl for t in winning_trades), default=0)
             largest_loss = min((t.pnl for t in losing_trades), default=0)
@@ -408,7 +398,7 @@ class BacktestParser:
         elif isinstance(timestamp, str):
             try:
                 return datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-            except:
+            except (TypeError, ValueError):
                 return datetime.now()
         else:
             return datetime.now()

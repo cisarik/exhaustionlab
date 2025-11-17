@@ -1,0 +1,175 @@
+---
+name: BDD Tests - Strategy Extraction
+
+on:
+  push:
+    branches: [main, develop, feature/*]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch: {}
+
+jobs:
+  bdd-tests:
+    name: BDD Strategy Extraction Tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better diffs
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.7.1
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            venv-${{ runner.os }}-${{ matrix.python-version }}-
+
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction --no-root
+
+      - name: Install project
+        run: poetry install --no-interaction
+
+      - name: Run BDD tests with coverage
+        run: |
+          poetry run pytest tests/bdd/test_strategy_extraction.py \
+            -v \
+            --cov=exhaustionlab/app/meta_evolution \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-report=term-missing \
+            --junitxml=test-results/bdd-junit.xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: matrix.python-version == '3.13'
+        with:
+          files: ./coverage.xml
+          flags: bdd-tests
+          name: bdd-coverage-${{ matrix.python-version }}
+          fail_ci_if_error: false
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.python-version }}
+          path: |
+            test-results/
+            htmlcov/
+            coverage.xml
+          retention-days: 30
+
+      - name: Publish test report
+        uses: mikepenz/action-junit-report@v4
+        if: always()
+        with:
+          report_paths: 'test-results/bdd-junit.xml'
+          check_name: BDD Test Report (Python ${{ matrix.python-version }})
+          fail_on_failure: true
+          include_passed: true
+          annotate_only: false
+
+      - name: Generate BDD report
+        if: always() && matrix.python-version == '3.13'
+        run: |
+          echo "## BDD Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          poetry run pytest tests/bdd/test_strategy_extraction.py -v --tb=no | tee -a $GITHUB_STEP_SUMMARY
+
+      - name: Check test coverage threshold
+        if: matrix.python-version == '3.13'
+        run: |
+          poetry run pytest tests/bdd/test_strategy_extraction.py \
+            --cov=exhaustionlab/app/meta_evolution \
+            --cov-fail-under=80 \
+            --cov-report=term-missing
+
+  integration-tests:
+    name: Full Integration Pipeline Tests
+    runs-on: ubuntu-latest
+    needs: bdd-tests
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+
+      - name: Install dependencies
+        run: poetry install --no-interaction
+
+      - name: Run integration tests
+        run: |
+          poetry run pytest tests/bdd/test_strategy_extraction.py \
+            -v \
+            -k "pipeline or concurrent or incremental" \
+            --tb=short
+
+      - name: Test concurrent extraction performance
+        run: |
+          echo "## Integration Performance" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          poetry run pytest \
+            tests/bdd/test_strategy_extraction.py::test_concurrent_extraction_with_thread_pool \
+            -v \
+            -s | tee -a "$GITHUB_STEP_SUMMARY"
+
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+
+      - name: Install dependencies
+        run: poetry install --no-interaction
+
+      - name: Run Black formatter check
+        run: poetry run black --check tests/bdd/
+
+      - name: Run Ruff linter
+        run: poetry run ruff check tests/bdd/
+
+      - name: Check BDD feature file syntax
+        run: |
+          # Ensure feature files are valid Gherkin
+          find tests/bdd/features -name "*.feature" -exec echo "Checking {}" \;

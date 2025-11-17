@@ -5,16 +5,14 @@ Standalone test for GitHub crawler - no dependencies on broken modules.
 This demonstrates the web crawler works and can extract strategies.
 """
 
-import sys
 import os
+import sys
 
 # Add to path
 sys.path.insert(0, os.path.dirname(__file__))
 
 # Import directly
-from exhaustionlab.app.meta_evolution.crawlers.github_crawler import (
-    GitHubStrategyCrawler,
-)
+from exhaustionlab.app.meta_evolution.crawlers.github_crawler import GitHubStrategyCrawler
 
 
 def test_crawler_initialization():

@@ -5,12 +5,12 @@ Test script for LLM integration with local DeepSeek API
 Demonstrates PyneCore strategy generation and mutation using local LLM.
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "exhaustionlab"))
 
-from exhaustionlab.app.llm import LocalLLMClient, LLMStrategyGenerator, PromptContext
+from exhaustionlab.app.llm import LLMStrategyGenerator, LocalLLMClient, PromptContext
 from exhaustionlab.app.llm.validators import PyneCoreValidator
 
 
@@ -52,9 +52,7 @@ def test_simple_generation():
 
     # Generate request
     generator = LLMStrategyGenerator(client)
-    gen_request = generator.create_signal_strategy(
-        "mean_reversion", "balanced", context
-    )
+    gen_request = generator.create_signal_strategy("mean_reversion", "balanced", context)
 
     # Generate strategy
     result = generator.generate_strategy(gen_request)
@@ -118,12 +116,12 @@ def main():
     level1 = input.int("Level 1", 9)
     level2 = input.int("Level 2", 12)
     level3 = input.int("Level 3", 14)
-    
+
     # Persistent state
     cycle: Persistent[int] = 0
     bull: Persistent[int] = 0
     bear: Persistent[int] = 0
-    
+
     # Logic here (simplified)
     plot(bull == level1, "Bull L1", color=color.green)
 '''
@@ -165,8 +163,7 @@ def test_evolution_integration():
     print("\n🧬 Testing evolution system integration...")
 
     try:
-        from exhaustionlab.app.backtest.llm_evolution import LLMStrategyMutator
-        from exhaustionlab.app.backtest.llm_evolution import StrategyGenome
+        from exhaustionlab.app.backtest.llm_evolution import LLMStrategyMutator, StrategyGenome
 
         # Create mutator
         mutator = LLMStrategyMutator()

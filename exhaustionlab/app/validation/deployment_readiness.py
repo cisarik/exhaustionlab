@@ -11,17 +11,17 @@ Final go/no-go decision for strategy deployment based on:
 
 from __future__ import annotations
 
+import json
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
 from enum import Enum
 from pathlib import Path
-import json
+from typing import Dict, List, Optional
 
+from .monte_carlo_simulator import SimulationResult
 from .multi_market_tester import AggregatedResults as MultiMarketResults
 from .profit_analyzer import ProfitMetrics
 from .walk_forward_validator import WalkForwardResult
-from .monte_carlo_simulator import SimulationResult
 
 logger = logging.getLogger(__name__)
 
@@ -252,14 +252,10 @@ class DeploymentReadinessScorer:
         risk_level = self._classify_risk_level(multi_market, profit)
 
         # Generate recommendations
-        recommendations = self._generate_recommendations(
-            status, multi_market, profit, walk_forward, monte_carlo
-        )
+        recommendations = self._generate_recommendations(status, multi_market, profit, walk_forward, monte_carlo)
 
         # Calculate recommended parameters
-        rec_position_size, rec_exposure, rec_loss_limit = (
-            self._calculate_recommended_parameters(risk_level, profit, multi_market)
-        )
+        rec_position_size, rec_exposure, rec_loss_limit = self._calculate_recommended_parameters(risk_level, profit, multi_market)
 
         return ReadinessReport(
             status=status,
@@ -279,9 +275,7 @@ class DeploymentReadinessScorer:
             recommended_daily_loss_limit=rec_loss_limit,
         )
 
-    def _check_multi_market(
-        self, results: MultiMarketResults
-    ) -> tuple[List[CheckResult], float]:
+    def _check_multi_market(self, results: MultiMarketResults) -> tuple[List[CheckResult], float]:
         """Check multi-market validation."""
         checks = []
 
@@ -341,11 +335,7 @@ class DeploymentReadinessScorer:
                 value=1.0 if results.performance_consistent else 0.0,
                 threshold=1.0,
                 critical=False,
-                message=(
-                    "Performance is statistically consistent"
-                    if results.performance_consistent
-                    else "Performance inconsistent"
-                ),
+                message=("Performance is statistically consistent" if results.performance_consistent else "Performance inconsistent"),
             )
         )
 
@@ -355,9 +345,7 @@ class DeploymentReadinessScorer:
 
         return checks, score
 
-    def _check_profit_quality(
-        self, profit: ProfitMetrics
-    ) -> tuple[List[CheckResult], float]:
+    def _check_profit_quality(self, profit: ProfitMetrics) -> tuple[List[CheckResult], float]:
         """Check profit quality."""
         checks = []
 
@@ -401,8 +389,7 @@ class DeploymentReadinessScorer:
         checks.append(
             CheckResult(
                 check_name="Statistical Significance",
-                passed=profit.statistically_significant
-                or not self.checklist.must_be_statistically_significant,
+                passed=profit.statistically_significant or not self.checklist.must_be_statistically_significant,
                 value=1.0 if profit.statistically_significant else 0.0,
                 threshold=1.0,
                 critical=self.checklist.must_be_statistically_significant,
@@ -416,9 +403,7 @@ class DeploymentReadinessScorer:
 
         return checks, score
 
-    def _check_walk_forward(
-        self, wf: WalkForwardResult
-    ) -> tuple[List[CheckResult], float]:
+    def _check_walk_forward(self, wf: WalkForwardResult) -> tuple[List[CheckResult], float]:
         """Check walk-forward validation."""
         checks = []
 
@@ -450,8 +435,7 @@ class DeploymentReadinessScorer:
         checks.append(
             CheckResult(
                 check_name="Performance Degradation",
-                passed=wf.mean_performance_degradation
-                <= self.checklist.max_degradation,
+                passed=wf.mean_performance_degradation <= self.checklist.max_degradation,
                 value=wf.mean_performance_degradation,
                 threshold=self.checklist.max_degradation,
                 critical=False,
@@ -467,11 +451,7 @@ class DeploymentReadinessScorer:
                 value=1.0 if wf.performance_stable else 0.0,
                 threshold=1.0,
                 critical=False,
-                message=(
-                    "Performance is stable"
-                    if wf.performance_stable
-                    else "Performance unstable"
-                ),
+                message=("Performance is stable" if wf.performance_stable else "Performance unstable"),
             )
         )
 
@@ -481,9 +461,7 @@ class DeploymentReadinessScorer:
 
         return checks, score
 
-    def _check_monte_carlo(
-        self, mc: SimulationResult
-    ) -> tuple[List[CheckResult], float]:
+    def _check_monte_carlo(self, mc: SimulationResult) -> tuple[List[CheckResult], float]:
         """Check Monte Carlo simulation."""
         checks = []
 
@@ -550,9 +528,7 @@ class DeploymentReadinessScorer:
 
         return max(0, score)
 
-    def _determine_status(
-        self, score: float, critical_failures: List[str], warnings: List[str]
-    ) -> DeploymentStatus:
+    def _determine_status(self, score: float, critical_failures: List[str], warnings: List[str]) -> DeploymentStatus:
         """Determine deployment status."""
         if critical_failures:
             return DeploymentStatus.REJECTED
@@ -606,9 +582,7 @@ class DeploymentReadinessScorer:
             recs.append("Implement stricter stop-losses initially")
 
             if walk_forward and walk_forward.overfitting_score > 40:
-                recs.append(
-                    "High overfitting detected - consider parameter simplification"
-                )
+                recs.append("High overfitting detected - consider parameter simplification")
 
         elif status == DeploymentStatus.NEEDS_IMPROVEMENT:
             recs.append("Strategy needs improvement before deployment")
@@ -620,9 +594,7 @@ class DeploymentReadinessScorer:
                 recs.append("Improve risk-adjusted returns")
 
             if walk_forward and walk_forward.overfitting_detected:
-                recs.append(
-                    "Reduce overfitting through simpler logic or different parameters"
-                )
+                recs.append("Reduce overfitting through simpler logic or different parameters")
 
         else:  # REJECTED
             recs.append("Strategy rejected - critical failures detected")
@@ -646,16 +618,10 @@ class DeploymentReadinessScorer:
             RiskLevel.EXTREME: (0.005, 0.025, 0.002),  # 0.5%, 2.5%, 0.2%
         }
 
-        position_size, max_exposure, daily_loss = base_params.get(
-            risk_level, (0.02, 0.10, 0.010)
-        )
+        position_size, max_exposure, daily_loss = base_params.get(risk_level, (0.02, 0.10, 0.010))
 
         # Adjust based on Kelly criterion if available
-        if (
-            profit
-            and profit.trade_analysis
-            and profit.trade_analysis.kelly_criterion > 0
-        ):
+        if profit and profit.trade_analysis and profit.trade_analysis.kelly_criterion > 0:
             # Use fraction of Kelly (typically 25-50%)
             kelly_fraction = 0.25
             kelly_size = profit.trade_analysis.kelly_criterion * kelly_fraction

@@ -8,20 +8,16 @@ for inclusion in LLM prompts to improve generation quality.
 from __future__ import annotations
 
 import logging
-from typing import List, Dict, Optional, Any
-from dataclasses import dataclass
-from pathlib import Path
-import re
 
 # Import database
 import sys
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from exhaustionlab.app.meta_evolution.strategy_database import (
-    StrategyDatabase,
-    Strategy,
-)
+from exhaustionlab.app.meta_evolution.strategy_database import Strategy, StrategyDatabase
 
 
 @dataclass
@@ -66,9 +62,7 @@ class StrategyExample:
         if not self.features:
             return "- Standard indicator logic"
 
-        active_features = [
-            k.replace("_", " ").title() for k, v in self.features.items() if v
-        ]
+        active_features = [k.replace("_", " ").title() for k, v in self.features.items() if v]
         if not active_features:
             return "- Standard indicator logic"
 
@@ -130,15 +124,7 @@ class ExampleLoader:
 
         # Filter by indicators if specified
         if indicators:
-            strategies = [
-                s
-                for s in strategies
-                if s.indicators_used
-                and any(
-                    ind.upper() in [i.upper() for i in s.indicators_used]
-                    for ind in indicators
-                )
-            ]
+            strategies = [s for s in strategies if s.indicators_used and any(ind.upper() in [i.upper() for i in s.indicators_used] for ind in indicators)]
 
         # Filter by complexity if specified
         if complexity:
@@ -156,9 +142,7 @@ class ExampleLoader:
 
         return examples
 
-    def get_examples_by_type(
-        self, strategy_type: str, count: int = 2
-    ) -> List[StrategyExample]:
+    def get_examples_by_type(self, strategy_type: str, count: int = 2) -> List[StrategyExample]:
         """
         Get examples for specific strategy type.
 
@@ -198,9 +182,7 @@ class ExampleLoader:
         examples = self.get_best_examples(count=1, min_quality=65, complexity="complex")
         return examples[0] if examples else None
 
-    def format_examples_for_prompt(
-        self, examples: List[StrategyExample], max_lines_per_example: int = 50
-    ) -> str:
+    def format_examples_for_prompt(self, examples: List[StrategyExample], max_lines_per_example: int = 50) -> str:
         """
         Format multiple examples for inclusion in LLM prompt.
 
@@ -223,9 +205,7 @@ class ExampleLoader:
                 formatted.append("\n---\n")
 
         formatted.append("\n## YOUR TASK\n")
-        formatted.append(
-            "Create a new strategy inspired by these examples but with your own unique approach.\n"
-        )
+        formatted.append("Create a new strategy inspired by these examples but with your own unique approach.\n")
 
         return "\n".join(formatted)
 
@@ -274,18 +254,12 @@ class ExampleLoader:
 
         return "\n".join(cleaned)
 
-    def _filter_by_complexity(
-        self, strategies: List[Strategy], complexity: str
-    ) -> List[Strategy]:
+    def _filter_by_complexity(self, strategies: List[Strategy], complexity: str) -> List[Strategy]:
         """Filter strategies by complexity level."""
         if complexity == "simple":
             return [s for s in strategies if s.lines_of_code and s.lines_of_code < 100]
         elif complexity == "medium":
-            return [
-                s
-                for s in strategies
-                if s.lines_of_code and 100 <= s.lines_of_code < 300
-            ]
+            return [s for s in strategies if s.lines_of_code and 100 <= s.lines_of_code < 300]
         elif complexity == "complex":
             return [s for s in strategies if s.lines_of_code and s.lines_of_code >= 300]
         else:
@@ -324,27 +298,9 @@ class ExampleLoader:
             "avg_loc": round(avg_loc, 0),
             "indicators_used": indicator_counts,
             "complexity_distribution": {
-                "simple": len(
-                    [
-                        s
-                        for s in all_strategies
-                        if s.lines_of_code and s.lines_of_code < 100
-                    ]
-                ),
-                "medium": len(
-                    [
-                        s
-                        for s in all_strategies
-                        if s.lines_of_code and 100 <= s.lines_of_code < 300
-                    ]
-                ),
-                "complex": len(
-                    [
-                        s
-                        for s in all_strategies
-                        if s.lines_of_code and s.lines_of_code >= 300
-                    ]
-                ),
+                "simple": len([s for s in all_strategies if s.lines_of_code and s.lines_of_code < 100]),
+                "medium": len([s for s in all_strategies if s.lines_of_code and 100 <= s.lines_of_code < 300]),
+                "complex": len([s for s in all_strategies if s.lines_of_code and s.lines_of_code >= 300]),
             },
         }
 
@@ -375,9 +331,7 @@ def load_examples_for_prompt(
     if strategy_type:
         examples = loader.get_examples_by_type(strategy_type, count)
     else:
-        examples = loader.get_best_examples(
-            count=count, min_quality=min_quality, indicators=indicators
-        )
+        examples = loader.get_best_examples(count=count, min_quality=min_quality, indicators=indicators)
 
     return loader.format_examples_for_prompt(examples)
 

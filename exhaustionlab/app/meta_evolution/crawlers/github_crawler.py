@@ -5,12 +5,12 @@ Extracts trading strategy examples from GitHub repositories.
 Focus on Pine Script and cryptocurrency trading strategies.
 """
 
-import requests
-import time
-import random
-from typing import List, Optional, Dict, Any
-from datetime import datetime
 import logging
+import random
+import time
+from typing import Any, Dict, List, Optional
+
+import requests
 
 logger = logging.getLogger(__name__)
 

@@ -12,27 +12,22 @@ Extracts COMPLETE strategy profiles including:
 Stores everything in SQLite database.
 """
 
-import sys
-import os
-import logging
-from pathlib import Path
-from typing import List, Dict, Any
 import argparse
+import logging
+import os
+import sys
+from typing import Dict, List
 
 # Setup logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # Add to path
 sys.path.insert(0, os.path.dirname(__file__))
 
 # Import modules
-from exhaustionlab.app.meta_evolution.crawlers.github_crawler import (
-    GitHubStrategyCrawler,
-)
 from exhaustionlab.app.meta_evolution.crawlers.code_extractor import GitHubCodeExtractor
+from exhaustionlab.app.meta_evolution.crawlers.github_crawler import GitHubStrategyCrawler
 from exhaustionlab.app.meta_evolution.quality_scorer import StrategyQualityScorer
 from exhaustionlab.app.meta_evolution.strategy_database import StrategyDatabase
 
@@ -134,9 +129,7 @@ class FullStrategyExtractor:
         logger.info(f"🔍 Finding top {limit} Pine Script repositories...")
 
         # Search for top repos
-        repos = self.crawler.search_strategies(
-            query="pinescript", min_stars=10, max_results=limit
-        )
+        repos = self.crawler.search_strategies(query="pinescript", min_stars=10, max_results=limit)
 
         logger.info(f"Found {len(repos)} repositories")
 
@@ -180,9 +173,7 @@ class FullStrategyExtractor:
             print(f"\n{idx}. {strategy.name}")
             print(f"   Author: {strategy.author}")
             print(f"   Platform: {strategy.platform}")
-            print(
-                f"   Quality: {strategy.quality_score:.1f} ({strategy.quality_category})"
-            )
+            print(f"   Quality: {strategy.quality_score:.1f} ({strategy.quality_category})")
             print(f"   Stars: {strategy.stars or 0}")
             if strategy.has_code:
                 print(f"   Code: ✅ {strategy.lines_of_code or '?'} LOC")
@@ -215,37 +206,25 @@ class FullStrategyExtractor:
                 print(f"   Python: {lines} lines")
 
             if strategy.readme:
-                print(f"   README: ✅")
+                print("   README: ✅")
 
         print("=" * 70)
 
 
 def main():
     """Main extraction flow."""
-    parser = argparse.ArgumentParser(
-        description="Extract complete strategy profiles to database"
-    )
+    parser = argparse.ArgumentParser(description="Extract complete strategy profiles to database")
     parser.add_argument(
         "--repos",
         nargs="+",
         help="Specific repositories to extract (owner/repo format)",
     )
-    parser.add_argument(
-        "--top", type=int, help="Extract top N repositories from GitHub"
-    )
-    parser.add_argument(
-        "--quick", action="store_true", help="Quick extraction (10 repos)"
-    )
-    parser.add_argument(
-        "--full", action="store_true", help="Full extraction (50 repos)"
-    )
+    parser.add_argument("--top", type=int, help="Extract top N repositories from GitHub")
+    parser.add_argument("--quick", action="store_true", help="Quick extraction (10 repos)")
+    parser.add_argument("--full", action="store_true", help="Full extraction (50 repos)")
     parser.add_argument("--stats", action="store_true", help="Show statistics only")
-    parser.add_argument(
-        "--show-top", type=int, metavar="N", help="Show top N strategies"
-    )
-    parser.add_argument(
-        "--show-code", type=int, metavar="N", help="Show N strategies with code"
-    )
+    parser.add_argument("--show-top", type=int, metavar="N", help="Show top N strategies")
+    parser.add_argument("--show-code", type=int, metavar="N", help="Show N strategies with code")
 
     args = parser.parse_args()
 

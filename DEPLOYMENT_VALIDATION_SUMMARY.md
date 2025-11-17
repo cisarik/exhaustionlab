@@ -420,25 +420,25 @@ async def validate_my_strategy(strategy_func):
     # Phase 1: Multi-market
     tester = EnhancedMultiMarketTester()
     multi_market = await tester.test_strategy(strategy_func)
-    
+
     # Phase 2: Profit analysis
     analyzer = ProfitAnalyzer()
     profit = analyzer.analyze(
         equity_curve=multi_market.individual_results[0].equity_curve,
         trades_df=multi_market.individual_results[0].trades_df,
     )
-    
+
     # Phase 3: Walk-forward
     validator = WalkForwardValidator()
     walk_forward = validator.validate(data, strategy_func)
-    
+
     # Phase 4: Monte Carlo
     simulator = MonteCarloSimulator()
     monte_carlo = simulator.run_bootstrap_simulation(
         multi_market.individual_results[0].equity_curve,
         multi_market.individual_results[0].returns_series,
     )
-    
+
     # Phase 5: Deployment decision
     scorer = DeploymentReadinessScorer()
     readiness = scorer.assess(
@@ -447,16 +447,16 @@ async def validate_my_strategy(strategy_func):
         walk_forward=walk_forward,
         monte_carlo=monte_carlo,
     )
-    
+
     # Print result
     print(scorer.generate_report(readiness))
-    
+
     # Check status
     if readiness.status.value == "approved":
         print(f"✅ APPROVED - Position size: {readiness.recommended_position_size:.2%}")
     else:
         print(f"❌ {readiness.status.value.upper()}")
-    
+
     return readiness
 
 # Run validation

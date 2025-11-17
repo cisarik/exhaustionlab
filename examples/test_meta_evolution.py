@@ -9,10 +9,10 @@ Tests complete meta-evolution workflow:
 4. Strategy generation with feedback loop
 """
 
-import sys
 import logging
-from pathlib import Path
+import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Dict, List
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(message)s")
@@ -21,10 +21,10 @@ logger = logging.getLogger(__name__)
 # Add to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from exhaustionlab.app.meta_evolution.strategy_database import StrategyDatabase
-from exhaustionlab.app.llm.example_loader import ExampleLoader
 from exhaustionlab.app.llm.enhanced_prompts import EnhancedPromptBuilder
+from exhaustionlab.app.llm.example_loader import ExampleLoader
 from exhaustionlab.app.llm.llm_client import LocalLLMClient
+from exhaustionlab.app.meta_evolution.strategy_database import StrategyDatabase
 
 
 @dataclass
@@ -107,9 +107,7 @@ def test_enhanced_prompts():
         risk_profile="balanced",
     )
 
-    prompt = builder.build_strategy_prompt(
-        context, include_examples=True, num_examples=2
-    )
+    prompt = builder.build_strategy_prompt(context, include_examples=True, num_examples=2)
 
     logger.info(f"\n📝 Generated Prompt:")
     logger.info(f"   Size: {len(prompt)} chars")
@@ -153,14 +151,10 @@ def test_adaptive_learning_simulation():
         state.quality_progression.append(quality)
 
         if quality >= 70:
-            state.successful_patterns.append(
-                {"generation": i, "quality": quality, "timestamp": datetime.now()}
-            )
+            state.successful_patterns.append({"generation": i, "quality": quality, "timestamp": datetime.now()})
             status = "✅"
         else:
-            state.failed_patterns.append(
-                {"generation": i, "quality": quality, "timestamp": datetime.now()}
-            )
+            state.failed_patterns.append({"generation": i, "quality": quality, "timestamp": datetime.now()})
             status = "❌"
 
         logger.info(f"  Gen {i+1}: Quality {quality:.1f} {status}")
@@ -245,9 +239,7 @@ def test_end_to_end_workflow():
         "suggestions": ["Good quality", "Ready for backtesting"],
     }
     logger.info(f"   Quality: {feedback['quality_score']}/100")
-    logger.info(
-        f"   Status: {'✅ PASS' if feedback['quality_score'] >= 70 else '❌ FAIL'}"
-    )
+    logger.info(f"   Status: {'✅ PASS' if feedback['quality_score'] >= 70 else '❌ FAIL'}")
 
     logger.info(f"\n✅ Complete workflow validated!")
 
@@ -281,9 +273,7 @@ def main():
             status = "✅ PASS" if result else "❌ FAIL"
             logger.info(f"  {name.title()}: {status}")
 
-        logger.info(
-            f"\n🎯 Overall: {passed}/{total} tests passed ({passed/total*100:.0f}%)"
-        )
+        logger.info(f"\n🎯 Overall: {passed}/{total} tests passed ({passed/total*100:.0f}%)")
 
         if passed == total:
             logger.info(f"\n🎉 Perfect! Meta-Evolution system is operational!")

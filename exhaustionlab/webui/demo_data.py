@@ -2,9 +2,9 @@
 Demo Data Generator - Creates preset strategies with good metrics for UX
 """
 
-from datetime import datetime, timedelta
 import random
-from typing import List, Dict, Any
+from datetime import datetime, timedelta
+from typing import Any, Dict, List
 
 
 def generate_demo_strategies(count: int = 8) -> List[Dict[str, Any]]:
@@ -59,9 +59,7 @@ def generate_demo_strategies(count: int = 8) -> List[Dict[str, Any]]:
             "total_return_pct": total_return * 100,
             "source": random.choice(sources),
             "generation": random.randint(1, 10),
-            "created_at": (
-                datetime.now() - timedelta(days=random.randint(1, 30))
-            ).isoformat(),
+            "created_at": (datetime.now() - timedelta(days=random.randint(1, 30))).isoformat(),
             "tags": ["momentum", "reversal", "profitable"],
             "code": f"# {strategy_names[i]} Strategy Code\n# Sharpe: {sharpe:.2f}, Win Rate: {win_rate*100:.1f}%\n\n# This is demo code\npass",
             "backtest_period": "30 days",
@@ -105,14 +103,8 @@ def generate_demo_backtest_result(strategy_id: str) -> Dict[str, Any]:
 
         trade = {
             "trade_id": i + 1,
-            "entry_time": (
-                datetime.now() - timedelta(days=30 - i * 30 / num_trades)
-            ).isoformat(),
-            "exit_time": (
-                datetime.now()
-                - timedelta(days=30 - i * 30 / num_trades)
-                + timedelta(hours=random.randint(1, 48))
-            ).isoformat(),
+            "entry_time": (datetime.now() - timedelta(days=30 - i * 30 / num_trades)).isoformat(),
+            "exit_time": (datetime.now() - timedelta(days=30 - i * 30 / num_trades) + timedelta(hours=random.randint(1, 48))).isoformat(),
             "entry_price": entry_price,
             "exit_price": exit_price,
             "quantity": quantity,
@@ -131,16 +123,11 @@ def generate_demo_backtest_result(strategy_id: str) -> Dict[str, Any]:
     winning = [t for t in trades if t["pnl"] > 0]
     losing = [t for t in trades if t["pnl"] <= 0]
 
-    total_pnl = sum(t["pnl"] for t in trades)
     win_rate = len(winning) / len(trades) if trades else 0
 
     avg_win = sum(t["pnl"] for t in winning) / len(winning) if winning else 0
     avg_loss = abs(sum(t["pnl"] for t in losing) / len(losing)) if losing else 1
-    profit_factor = (
-        (sum(t["pnl"] for t in winning) / abs(sum(t["pnl"] for t in losing)))
-        if losing
-        else 0
-    )
+    profit_factor = (sum(t["pnl"] for t in winning) / abs(sum(t["pnl"] for t in losing))) if losing else 0
 
     # Calculate max drawdown
     peak = equity_curve[0][1]

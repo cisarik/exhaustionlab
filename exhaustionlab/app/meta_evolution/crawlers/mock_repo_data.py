@@ -45,12 +45,8 @@ def _make_repo_info(name: str, author: str, stars: int) -> Dict[str, Any]:
 MOCK_REPOSITORIES: Dict[str, Dict[str, Any]] = {
     "user/trading-strategy": {
         "repo_info": _make_repo_info("trading-strategy", "user", 150),
-        "readme": (
-            "# Mock Trading Strategy\n\n"
-            "Includes stop loss, take profit, and position sizing guidance."
-        ),
-        "pine_code": BASE_PINE_CODE
-        + 'strategy.exit("TP", from_entry="Long", limit=take_profit)\n',
+        "readme": ("# Mock Trading Strategy\n\n" "Includes stop loss, take profit, and position sizing guidance."),
+        "pine_code": BASE_PINE_CODE + 'strategy.exit("TP", from_entry="Long", limit=take_profit)\n',
         "python_code": "def run_backtest():\n    return True\n",
         "backtest_metrics": {
             "sharpe_ratio": 1.85,
@@ -70,10 +66,7 @@ plot(close)
     },
     "f13end/tradingview-pinescript-indicators": {
         "repo_info": _make_repo_info("tradingview-pinescript-indicators", "f13end", 60),
-        "readme": (
-            "# Indicator Collection\n\n"
-            "This mock README demonstrates documentation extraction."
-        ),
+        "readme": ("# Indicator Collection\n\n" "This mock README demonstrates documentation extraction."),
         "pine_code": BASE_PINE_CODE,
     },
     "nonexistent/fake-repo-12345": {"error": "Repository not found on GitHub"},

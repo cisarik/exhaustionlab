@@ -18,9 +18,7 @@ from ..data.binance_rest import fetch_klines_csv_like
 from .traditional_genetics import TraditionalGenetics
 
 
-def load_history(
-    csv_path: Path | None, symbol: str, interval: str, limit: int
-) -> pd.DataFrame:
+def load_history(csv_path: Path | None, symbol: str, interval: str, limit: int) -> pd.DataFrame:
     """Load market history from CSV or Binance REST helper."""
     if csv_path and csv_path.exists():
         df = pd.read_csv(csv_path)
@@ -62,9 +60,7 @@ def run_traditional_ga(args):
     """Run traditional genetic algorithm without LLM integration."""
     print("[TRADITIONAL_GA] Starting fallback GA optimization...")
 
-    df = load_history(
-        getattr(args, "csv", None), args.symbol, args.interval, args.limit
-    )
+    df = load_history(getattr(args, "csv", None), args.symbol, args.interval, args.limit)
     returns = df["close"].pct_change().fillna(0.0).to_frame("returns")
 
     genetics = TraditionalGenetics()
@@ -74,17 +70,12 @@ def run_traditional_ga(args):
         generations=args.generations,
         mutation_rate=args.mutation,
         elite=max(1, args.elite),
-        fitness_func=lambda params, data: calculate_traditional_fitness(
-            params, data["returns"]
-        ),
+        fitness_func=lambda params, data: calculate_traditional_fitness(params, data["returns"]),
     )
 
     if getattr(args, "apply", False):
         save_squeeze_params(best_params)
         print("[TRADITIONAL_GA] Applied best parameters to squeeze_params.json")
 
-    print(
-        f"[TRADITIONAL_GA] Complete. Best fitness={best_fitness:.4f} "
-        f"params={best_params}"
-    )
+    print(f"[TRADITIONAL_GA] Complete. Best fitness={best_fitness:.4f} " f"params={best_params}")
     return True

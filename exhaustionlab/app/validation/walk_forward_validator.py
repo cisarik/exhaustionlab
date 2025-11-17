@@ -12,11 +12,11 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Callable
 from datetime import datetime
+from typing import Callable, Dict, List, Tuple
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -158,10 +158,7 @@ class WalkForwardValidator:
         in_sample_size = int(window_size * self.in_sample_ratio)
         out_sample_size = window_size - in_sample_size
 
-        logger.info(
-            f"Walk-forward validation: {num_periods} periods, "
-            f"IS size={in_sample_size}, OOS size={out_sample_size}"
-        )
+        logger.info(f"Walk-forward validation: {num_periods} periods, " f"IS size={in_sample_size}, OOS size={out_sample_size}")
 
         # Run walk-forward periods
         periods = []
@@ -235,42 +232,18 @@ class WalkForwardValidator:
         out_dd = self._calculate_max_drawdown(out_equity)
 
         # Calculate degradation
-        perf_degradation = (
-            (in_return - out_return) / abs(in_return) if in_return != 0 else 0
-        )
-        sharpe_degradation = (
-            (in_sharpe - out_sharpe) / abs(in_sharpe) if in_sharpe != 0 else 0
-        )
+        perf_degradation = (in_return - out_return) / abs(in_return) if in_return != 0 else 0
+        sharpe_degradation = (in_sharpe - out_sharpe) / abs(in_sharpe) if in_sharpe != 0 else 0
 
         # Validation
-        passed = (
-            out_return >= self.min_out_sample_return
-            and out_sharpe >= self.min_out_sample_sharpe
-            and perf_degradation <= self.max_degradation
-        )
+        passed = out_return >= self.min_out_sample_return and out_sharpe >= self.min_out_sample_sharpe and perf_degradation <= self.max_degradation
 
         return WalkForwardPeriod(
             period_id=period_id,
-            in_sample_start=(
-                data.index[in_start]
-                if hasattr(data.index[in_start], "to_pydatetime")
-                else datetime.now()
-            ),
-            in_sample_end=(
-                data.index[in_end - 1]
-                if hasattr(data.index[in_end - 1], "to_pydatetime")
-                else datetime.now()
-            ),
-            out_sample_start=(
-                data.index[out_start]
-                if hasattr(data.index[out_start], "to_pydatetime")
-                else datetime.now()
-            ),
-            out_sample_end=(
-                data.index[out_end - 1]
-                if hasattr(data.index[out_end - 1], "to_pydatetime")
-                else datetime.now()
-            ),
+            in_sample_start=(data.index[in_start] if hasattr(data.index[in_start], "to_pydatetime") else datetime.now()),
+            in_sample_end=(data.index[in_end - 1] if hasattr(data.index[in_end - 1], "to_pydatetime") else datetime.now()),
+            out_sample_start=(data.index[out_start] if hasattr(data.index[out_start], "to_pydatetime") else datetime.now()),
+            out_sample_end=(data.index[out_end - 1] if hasattr(data.index[out_end - 1], "to_pydatetime") else datetime.now()),
             in_sample_return=in_return,
             out_sample_return=out_return,
             in_sample_sharpe=in_sharpe,
@@ -303,9 +276,7 @@ class WalkForwardValidator:
         mean_sharpe_degradation = np.mean(sharpe_degradations)
 
         # Overfitting detection
-        overfitting_score = self._calculate_overfitting_score(
-            mean_degradation, std_degradation, pass_rate
-        )
+        overfitting_score = self._calculate_overfitting_score(mean_degradation, std_degradation, pass_rate)
         overfitting_detected = overfitting_score > 60  # Threshold
 
         # Stability analysis
@@ -346,9 +317,7 @@ class WalkForwardValidator:
         drawdown = (equity - running_max) / running_max
         return abs(drawdown.min())
 
-    def _calculate_overfitting_score(
-        self, mean_degradation: float, std_degradation: float, pass_rate: float
-    ) -> float:
+    def _calculate_overfitting_score(self, mean_degradation: float, std_degradation: float, pass_rate: float) -> float:
         """
         Calculate overfitting score (0-100).
 

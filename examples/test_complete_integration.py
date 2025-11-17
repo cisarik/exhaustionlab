@@ -27,11 +27,7 @@ def test_phase_1_configuration():
     print("PHASE 1: CONFIGURATION LAYER")
     print("=" * 70)
 
-    from exhaustionlab.app.config.strategy_config import (
-        ConfigurationManager,
-        StrategyConfig,
-        create_momentum_config,
-    )
+    from exhaustionlab.app.config.strategy_config import ConfigurationManager, StrategyConfig, create_momentum_config
 
     # Create manager
     manager = ConfigurationManager()
@@ -74,8 +70,8 @@ def test_phase_2_llm_integration():
     print("PHASE 2: LLM INTEGRATION")
     print("=" * 70)
 
-    from exhaustionlab.app.llm.example_loader import ExampleLoader
     from exhaustionlab.app.llm.enhanced_prompts import EnhancedPromptBuilder
+    from exhaustionlab.app.llm.example_loader import ExampleLoader
 
     # Test 1: Example Loader
     print("\n✓ Test 1: Loading strategy examples...")
@@ -96,18 +92,14 @@ def test_phase_2_llm_integration():
         signal_logic="momentum",
         risk_profile="balanced",
     )
-    prompt = builder.build_strategy_prompt(
-        context=context, include_examples=True, num_examples=2
-    )
+    prompt = builder.build_strategy_prompt(context=context, include_examples=True, num_examples=2)
     assert len(prompt) > 1000
     print(f"  ✅ Generated prompt: {len(prompt)} chars")
 
     # Test 3: Mutation Prompt
     print("\n✓ Test 3: Building mutation prompt...")
     code_sample = "def strategy(): pass"
-    mutation_prompt = builder.build_mutation_prompt(
-        base_strategy_code=code_sample, mutation_type="parameter", context=context
-    )
+    mutation_prompt = builder.build_mutation_prompt(base_strategy_code=code_sample, mutation_type="parameter", context=context)
     assert len(mutation_prompt) > 100
     print(f"  ✅ Mutation prompt ready: {len(mutation_prompt)} chars")
 
@@ -121,22 +113,14 @@ def test_phase_3_meta_evolution():
     print("PHASE 3: META-EVOLUTION")
     print("=" * 70)
 
-    from exhaustionlab.app.meta_evolution.performance_metrics import (
-        PerformanceMetrics,
-        calculate_sharpe_ratio,
-    )
-    from exhaustionlab.app.meta_evolution.strategic_directives import (
-        StrategyObjective,
-        AdaptiveDirectiveManager,
-    )
-    from exhaustionlab.app.meta_evolution.adaptive_parameters import (
-        AdaptiveParameterOptimizer,
-    )
+    from exhaustionlab.app.meta_evolution.adaptive_parameters import AdaptiveParameterOptimizer
+    from exhaustionlab.app.meta_evolution.performance_metrics import PerformanceMetrics, calculate_sharpe_ratio
+    from exhaustionlab.app.meta_evolution.strategic_directives import AdaptiveDirectiveManager, StrategyObjective
 
     # Test 1: Performance Metrics
     print("\n✓ Test 1: Calculating performance metrics...")
-    import pandas as pd
     import numpy as np
+    import pandas as pd
 
     # Synthetic data
     returns = pd.Series(np.random.randn(100) * 0.02)
@@ -182,8 +166,8 @@ def test_unified_system():
     print("UNIFIED SYSTEM TEST")
     print("=" * 70)
 
-    from exhaustionlab.app.config.strategy_config import create_momentum_config
     from exhaustionlab.app.backtest.unified_evolution import UnifiedEvolutionEngine
+    from exhaustionlab.app.config.strategy_config import create_momentum_config
 
     # Test 1: Configuration + Evolution Engine
     print("\n✓ Test 1: Integrating configuration with evolution...")

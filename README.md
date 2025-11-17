@@ -69,7 +69,7 @@ pip install --user pipx && pipx ensurepath
 pipx install poetry
 
 # Clone and install dependencies
-poetry install
+make install        # wraps poetry install for a consistent dev workflow
 
 # Run GUI
 poetry run python -m exhaustionlab.app.main
@@ -77,6 +77,19 @@ poetry run python -m exhaustionlab.app.main
 # Run tests (pytest is limited to tests/ via pytest.ini)
 poetry run pytest
 ```
+
+### Docker Workflow
+
+```bash
+cp .env.example .env         # provide runtime settings + DB URL
+make docker-build            # multi-stage build (arm64/amd64)
+docker compose up gui        # headless PySide GUI (QT_QPA_PLATFORM=offscreen)
+docker compose up api        # FastAPI validation API on http://localhost:8080
+```
+
+- Both `gui` and `api` services mount `./.env` and `./data` so changes sync live.
+- `EXHAUSTIONLAB_RUNTIME` controls the entrypoint (`gui` → PySide app, `api` → uvicorn).
+- The compose file also provisions a Postgres service (`db`) for future analytics; credentials come from `.env`.
 
 ### API Examples (v2.0)
 

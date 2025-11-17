@@ -1,4 +1,4 @@
-from typing import Protocol, Iterable, Dict
+from typing import Dict, Iterable, Protocol
 
 
 class DataSource(Protocol):

@@ -55,7 +55,7 @@ histogram, dokáže evoluovať parametre indikátora cez genetický algoritmus a
 
 - **Michal** (kvant/dev): chce iterovať Pine → Python, spúšťať GA nad historickými dátami, vidieť live signály na
   Binance streame a rýchlo si overiť výsledok v PyneCore cli.
-  
+
 **Usage:**
 - Spustenie GUI: `poetry run python -m exhaustionlab.app.main`
 - Traditional GA: `poetry run python -m exhaustionlab.app.backtest.ga_optimizer --apply`

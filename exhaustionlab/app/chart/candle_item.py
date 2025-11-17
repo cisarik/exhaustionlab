@@ -15,15 +15,19 @@ class CandlestickItem(pg.GraphicsObject):
         p = QPainter(self.picture)
         w = 0.6  # candle body width (in x axis units)
         for i, row in enumerate(self._df.itertuples()):
-            o, h, l, c = row.open, row.high, row.low, row.close
-            candle_color = pg.mkColor(0, 170, 0) if c >= o else pg.mkColor(200, 30, 30)
+            open_price, high_price, low_price, close_price = row.open, row.high, row.low, row.close
+            candle_color = pg.mkColor(0, 170, 0) if close_price >= open_price else pg.mkColor(200, 30, 30)
             p.setPen(pg.mkPen(candle_color))
             p.setBrush(pg.mkBrush(candle_color))
             # wick
-            p.drawLine(pg.QtCore.QPointF(i, h), pg.QtCore.QPointF(i, l))
+            p.drawLine(pg.QtCore.QPointF(i, high_price), pg.QtCore.QPointF(i, low_price))
             # body
+            body_height = abs(close_price - open_price)
             rect = QRectF(
-                i - w / 2, min(o, c), w, abs(c - o) if abs(c - o) > 1e-12 else 0.0000001
+                i - w / 2,
+                min(open_price, close_price),
+                w,
+                body_height if body_height > 1e-12 else 0.0000001,
             )
             p.drawRect(rect)
         p.end()

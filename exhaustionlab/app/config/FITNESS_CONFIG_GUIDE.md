@@ -10,7 +10,7 @@ from .config.fitness_config import get_fitness_config
 config = get_fitness_config("AGGRESSIVE_DEMO")
 
 # Pre výskum a vývoj
-config = get_fitness_config("BALANCED_RESEARCH") 
+config = get_fitness_config("BALANCED_RESEARCH")
 
 # Pre paper trading
 config = get_fitness_config("CONSERVATIVE_PRODUCTION")
@@ -73,7 +73,7 @@ python -m exhaustionlab.app.backtest.ga_optimizer \
 Každá stratégia musí prejsť validáciou podľa threshold hodnôt:
 
 - Minimálny fitness skóre: 0.3-0.5
-- Minimálny Sharpe ratio: 0.3-1.0  
+- Minimálny Sharpe ratio: 0.3-1.0
 - Maximálny drawdown: 15-35%
 - Win rate: 40-55%
 - Minimálne trhy: 2-6
@@ -87,7 +87,7 @@ Každá stratégia musí prejsť validáciou podľa threshold hodnôt:
 # Výskumná fáza - hľadanie nových stratégií
 research_config = get_fitness_config("AGGRESSIVE_DEMO")
 
-# Optimalizačná fáza - doladenie najlepšej stratégie  
+# Optimalizačná fáza - doladenie najlepšej stratégie
 optimization_config = get_fitness_config("BALANCED_RESEARCH")
 
 # Validácia pre live trading

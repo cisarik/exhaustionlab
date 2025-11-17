@@ -119,13 +119,13 @@
       - Score breakdown with progress bars
       - Trade journal table
       - Actionable recommendations
-    
+
     **Charts (matplotlib → base64 PNG):**
     - Equity curve (line chart with shaded area)
     - Drawdown analysis (filled area chart)
     - Returns distribution (histogram with mean/median)
     - Monthly returns (bar chart, green/red)
-    
+
     **Features:**
     - Single-file HTML (portable, no external deps)
     - Professional CSS styling with gradients
@@ -206,10 +206,10 @@ else:
 
 ### Sample Strategy Validation
 
-**Strategy:** Momentum Exhaustion v2  
-**Symbol:** BTCUSDT  
-**Timeframe:** 5m  
-**Period:** 30 days  
+**Strategy:** Momentum Exhaustion v2
+**Symbol:** BTCUSDT
+**Timeframe:** 5m
+**Period:** 30 days
 
 **Backtest Results:**
 - Total Trades: 150

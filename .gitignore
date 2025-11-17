@@ -80,9 +80,8 @@ tmp/
 
 # Mac/Linux miscellany
 .Trash-*/
-.fuse_hidden* 
+.fuse_hidden*
 .Spotlight-V100
 .Trashes
 ehthumbs.db
 Icon?
-

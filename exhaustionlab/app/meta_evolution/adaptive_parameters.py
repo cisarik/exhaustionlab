@@ -12,16 +12,16 @@ Uses multi-armed bandit algorithms and Bayesian optimization.
 
 from __future__ import annotations
 
-import logging
 import json
-import numpy as np
-from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass, field, asdict
+import logging
+import random
+from collections import defaultdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from collections import defaultdict
-import random
+from typing import Any, Dict, List, Optional
 
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -70,9 +70,7 @@ class ParameterConfig:
             else:
                 return self.current_value
 
-    def update_from_feedback(
-        self, value_used: Any, quality_score: float, success: bool
-    ):
+    def update_from_feedback(self, value_used: Any, quality_score: float, success: bool):
         """Update parameter based on feedback."""
         self.attempts += 1
 
@@ -80,9 +78,7 @@ class ParameterConfig:
             self.successes += 1
 
         # Update average quality
-        self.avg_quality = (
-            self.avg_quality * (self.attempts - 1) + quality_score
-        ) / self.attempts
+        self.avg_quality = (self.avg_quality * (self.attempts - 1) + quality_score) / self.attempts
 
         # Update optimal if this is better
         if quality_score > self.avg_quality * 1.1:  # 10% better than average
@@ -91,10 +87,7 @@ class ParameterConfig:
                 if self.optimal_value is None:
                     self.optimal_value = value_used
                 else:
-                    self.optimal_value = (
-                        self.optimal_value * (1 - self.learning_rate)
-                        + value_used * self.learning_rate
-                    )
+                    self.optimal_value = self.optimal_value * (1 - self.learning_rate) + value_used * self.learning_rate
             else:
                 self.optimal_value = value_used
 
@@ -231,9 +224,7 @@ class MetaParameterSet:
             config[name] = param.sample_value(exploration_rate)
         return config
 
-    def update_from_feedback(
-        self, config_used: Dict[str, Any], quality_score: float, success: bool
-    ):
+    def update_from_feedback(self, config_used: Dict[str, Any], quality_score: float, success: bool):
         """Update all parameters based on feedback."""
         for name, value in config_used.items():
             if name in self.get_all_parameters():
@@ -255,10 +246,7 @@ class AdaptiveParameterOptimizer:
     def __init__(self, save_path: Optional[Path] = None):
         """Initialize optimizer."""
         self.parameters = MetaParameterSet()
-        self.save_path = (
-            save_path
-            or Path.home() / "ExhaustionLab" / ".cache" / "adaptive_params.json"
-        )
+        self.save_path = save_path or Path.home() / "ExhaustionLab" / ".cache" / "adaptive_params.json"
 
         # Performance history
         self.configuration_history: List[Dict[str, Any]] = []
@@ -308,20 +296,14 @@ class AdaptiveParameterOptimizer:
             success_rate = self.successful_attempts / self.total_attempts
 
             if success_rate < 0.3:
-                self.global_exploration_rate = min(
-                    0.8, self.global_exploration_rate + 0.05
-                )
+                self.global_exploration_rate = min(0.8, self.global_exploration_rate + 0.05)
             elif success_rate > 0.7:
-                self.global_exploration_rate = max(
-                    0.1, self.global_exploration_rate - 0.05
-                )
+                self.global_exploration_rate = max(0.1, self.global_exploration_rate - 0.05)
 
         # Sample configuration
         config = self.parameters.sample_configuration(self.global_exploration_rate)
 
-        self.logger.info(
-            f"Suggested config (exploration={self.global_exploration_rate:.2f}):"
-        )
+        self.logger.info(f"Suggested config (exploration={self.global_exploration_rate:.2f}):")
         for key, value in config.items():
             if isinstance(value, float):
                 self.logger.info(f"  {key}: {value:.2f}")
@@ -363,11 +345,7 @@ class AdaptiveParameterOptimizer:
 
         # Log update
         success_rate = self.successful_attempts / self.total_attempts
-        self.logger.info(
-            f"Updated params: Quality={quality_score:.1f}, "
-            f"Success={success}, "
-            f"Success Rate={success_rate:.1%}"
-        )
+        self.logger.info(f"Updated params: Quality={quality_score:.1f}, " f"Success={success}, " f"Success Rate={success_rate:.1%}")
 
         # Save state periodically
         if self.total_attempts % 5 == 0:
@@ -387,10 +365,7 @@ class AdaptiveParameterOptimizer:
 
         for param_name in params.keys():
             # Extract parameter values
-            param_values = [
-                config.get(param_name, params[param_name].current_value)
-                for config in recent_configs
-            ]
+            param_values = [config.get(param_name, params[param_name].current_value) for config in recent_configs]
 
             # Calculate correlation
             if len(set(param_values)) > 1:  # Only if there's variation
@@ -400,10 +375,7 @@ class AdaptiveParameterOptimizer:
                     self.parameter_correlations[param_name]["performance"] = correlation
 
                     if abs(correlation) > 0.5:
-                        self.logger.info(
-                            f"  📊 Strong correlation: {param_name} → "
-                            f"performance ({correlation:+.2f})"
-                        )
+                        self.logger.info(f"  📊 Strong correlation: {param_name} → " f"performance ({correlation:+.2f})")
 
     def get_statistics(self) -> Dict[str, Any]:
         """Get optimizer statistics."""
@@ -416,27 +388,17 @@ class AdaptiveParameterOptimizer:
                 "optimal": param.optimal_value,
                 "attempts": param.attempts,
                 "successes": param.successes,
-                "success_rate": (
-                    param.successes / param.attempts if param.attempts > 0 else 0
-                ),
+                "success_rate": (param.successes / param.attempts if param.attempts > 0 else 0),
                 "avg_quality": param.avg_quality,
             }
 
         return {
             "total_attempts": self.total_attempts,
             "successful_attempts": self.successful_attempts,
-            "global_success_rate": (
-                self.successful_attempts / self.total_attempts
-                if self.total_attempts > 0
-                else 0
-            ),
+            "global_success_rate": (self.successful_attempts / self.total_attempts if self.total_attempts > 0 else 0),
             "exploration_rate": self.global_exploration_rate,
-            "avg_quality": (
-                np.mean(self.performance_history) if self.performance_history else 0
-            ),
-            "best_quality": (
-                max(self.performance_history) if self.performance_history else 0
-            ),
+            "avg_quality": (np.mean(self.performance_history) if self.performance_history else 0),
+            "best_quality": (max(self.performance_history) if self.performance_history else 0),
             "parameters": param_stats,
             "correlations": dict(self.parameter_correlations),
         }
@@ -450,10 +412,7 @@ class AdaptiveParameterOptimizer:
                 "total_attempts": self.total_attempts,
                 "successful_attempts": self.successful_attempts,
                 "global_exploration_rate": self.global_exploration_rate,
-                "parameters": {
-                    name: asdict(param)
-                    for name, param in self.parameters.get_all_parameters().items()
-                },
+                "parameters": {name: asdict(param) for name, param in self.parameters.get_all_parameters().items()},
                 "configuration_history": self.configuration_history[-100:],  # Last 100
                 "performance_history": self.performance_history[-100:],
                 "parameter_correlations": dict(self.parameter_correlations),
@@ -482,27 +441,20 @@ class AdaptiveParameterOptimizer:
             self.global_exploration_rate = state.get("global_exploration_rate", 0.3)
             self.configuration_history = state.get("configuration_history", [])
             self.performance_history = state.get("performance_history", [])
-            self.parameter_correlations = defaultdict(
-                dict, state.get("parameter_correlations", {})
-            )
+            self.parameter_correlations = defaultdict(dict, state.get("parameter_correlations", {}))
 
             # Restore parameter configs
             params_data = state.get("parameters", {})
             for name, param_dict in params_data.items():
                 if name in self.parameters.get_all_parameters():
                     param = self.parameters.get_all_parameters()[name]
-                    param.current_value = param_dict.get(
-                        "current_value", param.current_value
-                    )
+                    param.current_value = param_dict.get("current_value", param.current_value)
                     param.optimal_value = param_dict.get("optimal_value")
                     param.attempts = param_dict.get("attempts", 0)
                     param.successes = param_dict.get("successes", 0)
                     param.avg_quality = param_dict.get("avg_quality", 0.0)
 
-            self.logger.info(
-                f"Loaded optimizer state: {self.total_attempts} attempts, "
-                f"{self.successful_attempts} successes"
-            )
+            self.logger.info(f"Loaded optimizer state: {self.total_attempts} attempts, " f"{self.successful_attempts} successes")
 
         except Exception as e:
             self.logger.warning(f"Failed to load state: {e}")
@@ -517,7 +469,7 @@ def format_optimizer_report(optimizer: AdaptiveParameterOptimizer) -> str:
     report.append("ADAPTIVE PARAMETERS OPTIMIZER REPORT")
     report.append("=" * 70)
 
-    report.append(f"\n📊 GLOBAL STATISTICS:")
+    report.append("\n📊 GLOBAL STATISTICS:")
     report.append(f"  Total Attempts: {stats['total_attempts']}")
     report.append(f"  Successful: {stats['successful_attempts']}")
     report.append(f"  Success Rate: {stats['global_success_rate']:.1%}")
@@ -525,7 +477,7 @@ def format_optimizer_report(optimizer: AdaptiveParameterOptimizer) -> str:
     report.append(f"  Average Quality: {stats['avg_quality']:.1f}")
     report.append(f"  Best Quality: {stats['best_quality']:.1f}")
 
-    report.append(f"\n🎛️ PARAMETER STATUS:")
+    report.append("\n🎛️ PARAMETER STATUS:")
     for name, param_stats in stats["parameters"].items():
         report.append(f"\n  {name}:")
         report.append(f"    Current: {param_stats['current']}")
@@ -537,7 +489,7 @@ def format_optimizer_report(optimizer: AdaptiveParameterOptimizer) -> str:
             report.append(f"    Avg Quality: {param_stats['avg_quality']:.1f}")
 
     if stats["correlations"]:
-        report.append(f"\n📈 CORRELATIONS:")
+        report.append("\n📈 CORRELATIONS:")
         for param, corr_data in stats["correlations"].items():
             if "performance" in corr_data:
                 corr = corr_data["performance"]
@@ -584,9 +536,7 @@ if __name__ == "__main__":
 
         success = quality >= 70
 
-        print(
-            f"\n  Gen {i+1}: Quality={quality:.1f}, Temp={temp:.2f}, Success={success}"
-        )
+        print(f"\n  Gen {i+1}: Quality={quality:.1f}, Temp={temp:.2f}, Success={success}")
 
         # Update optimizer
         optimizer.update_from_result(config, quality, success)

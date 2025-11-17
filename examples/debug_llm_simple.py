@@ -5,13 +5,14 @@ SIMPLE LLM DEBUGGER - No database dependencies
 Shows raw LLM communication without example database.
 """
 
-import sys
-import os
 import json
+import os
+import sys
 import time
-import requests
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+
+import requests
 
 OUTPUT_DIR = Path("llm_debug_logs")
 OUTPUT_DIR.mkdir(exist_ok=True)
@@ -22,7 +23,7 @@ SESSION_DIR = OUTPUT_DIR / f"session_{timestamp}"
 SESSION_DIR.mkdir(exist_ok=True)
 
 print(
-    f"""
+    """
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                   🔍 SIMPLE LLM COMMUNICATION DEBUGGER 🔍                    ║
 ║                                                                              ║
@@ -36,7 +37,7 @@ BASE_URL = "http://127.0.0.1:1234"
 MODEL_NAME = os.getenv("LLM_MODEL", "google/gemma-3n-e4b")
 TEMPERATURE = 0.7
 
-print(f"⚙️ Configuration:")
+print("⚙️ Configuration:")
 print(f"   URL: {BASE_URL}")
 print(f"   Model: {MODEL_NAME}")
 print(f"   Temperature: {TEMPERATURE}")
@@ -52,8 +53,8 @@ try:
     response = requests.get(f"{BASE_URL}/v1/models", timeout=5)
     if response.status_code == 200:
         data = response.json()
-        print(f"✅ Connected!")
-        print(f"\n📊 Available models:")
+        print("✅ Connected!")
+        print("\n📊 Available models:")
         if "data" in data:
             for model in data["data"]:
                 model_id = model.get("id", "unknown")
@@ -87,18 +88,18 @@ STRUCTURE:
 def main():
     # 1. Define inputs
     period = input.int("Period", 14)
-    
+
     # 2. Calculate indicators
     rsi_value = close.rsi(period)
-    
+
     # 3. Generate signals
     buy_signal = rsi_value < 30
     sell_signal = rsi_value > 70
-    
+
     # 4. Plot results
     plot(buy_signal, "Buy", color=color.green)
     plot(sell_signal, "Sell", color=color.red)
-    
+
     return {"buy": buy_signal, "sell": sell_signal}
 ```
 
@@ -169,23 +170,21 @@ payload = {
     "stream": False,
 }
 
-print(f"\n⚙️ Request parameters:")
+print("\n⚙️ Request parameters:")
 print(f"   Model: {MODEL_NAME}")
 print(f"   Temperature: {TEMPERATURE}")
-print(f"   Max tokens: 2000")
+print("   Max tokens: 2000")
 print(f"   Messages: {len(messages)}")
 
 # Save request
 with open(SESSION_DIR / "03_request.json", "w") as f:
     json.dump(payload, f, indent=2)
 
-print(f"\n⏳ Waiting for response...")
+print("\n⏳ Waiting for response...")
 start_time = time.time()
 
 try:
-    response = requests.post(
-        f"{BASE_URL}/v1/chat/completions", json=payload, timeout=120
-    )
+    response = requests.post(f"{BASE_URL}/v1/chat/completions", json=payload, timeout=120)
 
     elapsed = time.time() - start_time
 
@@ -210,7 +209,7 @@ try:
     with open(SESSION_DIR / "05_response_content.txt", "w") as f:
         f.write(content)
 
-    print(f"\n💾 Response saved")
+    print("\n💾 Response saved")
 
 except Exception as e:
     print(f"❌ Request failed: {e}")
@@ -221,13 +220,13 @@ print(f"\n{'='*80}")
 print("🔍 ANALYZING RESPONSE")
 print("=" * 80)
 
-print(f"\n📊 Statistics:")
+print("\n📊 Statistics:")
 print(f"   Content length: {len(content):,} chars")
 print(f"   Lines: {len(content.splitlines())}")
 print(f"   Request time: {elapsed:.2f}s")
 
 if usage:
-    print(f"\n🎯 Token usage:")
+    print("\n🎯 Token usage:")
     for key, value in usage.items():
         print(f"   {key}: {value:,}")
 
@@ -269,8 +268,8 @@ if python_blocks:
 
         print(f"💾 Saved to: {code_file}")
 else:
-    print(f"\n⚠️ NO CODE BLOCKS FOUND!")
-    print(f"\nLooking for indicators...")
+    print("\n⚠️ NO CODE BLOCKS FOUND!")
+    print("\nLooking for indicators...")
 
     if "```" in content:
         print("   ✅ Found ``` markers")
@@ -303,7 +302,7 @@ if python_blocks:
         "return": "Has return statement",
     }
 
-    print(f"\n🔍 Code structure checks:")
+    print("\n🔍 Code structure checks:")
     passed = 0
     for pattern, description in checks.items():
         found = pattern in code
@@ -342,22 +341,22 @@ summary = {
 with open(SESSION_DIR / "00_SUMMARY.json", "w") as f:
     json.dump(summary, f, indent=2)
 
-print(f"\n✅ Debug session complete!")
+print("\n✅ Debug session complete!")
 print(f"\n📁 All files saved to: {SESSION_DIR}")
-print(f"\n📄 Files generated:")
+print("\n📄 Files generated:")
 for file in sorted(SESSION_DIR.iterdir()):
     size = file.stat().st_size
     print(f"   - {file.name} ({size:,} bytes)")
 
-print(f"\n💡 Next steps:")
-print(f"   1. Review 05_response_content.txt to see what the model generated")
-print(f"   2. Check 06_code_block_1.py for extracted code")
-print(f"   3. Look for hallucination patterns")
-print(f"   4. Test with different models/temperatures")
+print("\n💡 Next steps:")
+print("   1. Review 05_response_content.txt to see what the model generated")
+print("   2. Check 06_code_block_1.py for extracted code")
+print("   3. Look for hallucination patterns")
+print("   4. Test with different models/temperatures")
 
 if python_blocks:
-    print(f"\n🎉 CODE WAS GENERATED! Check if it's valid or hallucinated.")
+    print("\n🎉 CODE WAS GENERATED! Check if it's valid or hallucinated.")
 else:
-    print(f"\n⚠️ NO CODE GENERATED! Model may not understand the task.")
+    print("\n⚠️ NO CODE GENERATED! Model may not understand the task.")
 
 print()

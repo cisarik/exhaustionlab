@@ -6,8 +6,8 @@ for strategy evaluation across different use cases.
 """
 
 from dataclasses import dataclass
-from typing import Dict, Optional
 from pathlib import Path
+from typing import Dict, Optional
 
 
 @dataclass
@@ -286,40 +286,25 @@ class GlobalFitnessConfig:
 
     def calculate_composite_fitness(self, metrics: Dict) -> float:
         """Calculate composite fitness score from metrics."""
-        import numpy as np
 
         # Normalize each metric
         normalized = {}
 
         # Core metrics
-        normalized["pnl"] = self.normalize_metric(
-            abs(metrics.get("total_pnl", 0)), "pnl"
-        )
-        normalized["sharpe_ratio"] = self.normalize_metric(
-            max(0, metrics.get("sharpe_ratio", 0)), "sharpe_ratio"
-        )
-        normalized["max_drawdown"] = self.normalize_metric(
-            metrics.get("max_drawdown", 1.0), "max_drawdown"
-        )
+        normalized["pnl"] = self.normalize_metric(abs(metrics.get("total_pnl", 0)), "pnl")
+        normalized["sharpe_ratio"] = self.normalize_metric(max(0, metrics.get("sharpe_ratio", 0)), "sharpe_ratio")
+        normalized["max_drawdown"] = self.normalize_metric(metrics.get("max_drawdown", 1.0), "max_drawdown")
         normalized["win_rate"] = metrics.get("win_rate", 0.0)  # Already 0-1
-        normalized["trade_frequency"] = self.normalize_metric(
-            metrics.get("avg_daily_trades", 25), "trade_frequency"
-        )
+        normalized["trade_frequency"] = self.normalize_metric(metrics.get("avg_daily_trades", 25), "trade_frequency")
 
         # Consistency metric
         volatility_adj_return = metrics.get("volatility_adjusted_return", 0)
         downside_deviation = metrics.get("downside_deviation", 1.0)
-        normalized["consistency"] = 1.0 - min(
-            1.0, downside_deviation / max(volatility_adj_return, 0.1)
-        )
+        normalized["consistency"] = 1.0 - min(1.0, downside_deviation / max(volatility_adj_return, 0.1))
 
         # Real-world factors
-        normalized["slippage_impact"] = 1.0 - self.normalize_metric(
-            metrics.get("slippage_impact", 0.01), "slippage_impact"
-        )
-        normalized["execution_speed"] = 1.0 - self.normalize_metric(
-            metrics.get("execution_delay_ms", 100) / 1000, "execution_delay"
-        )
+        normalized["slippage_impact"] = 1.0 - self.normalize_metric(metrics.get("slippage_impact", 0.01), "slippage_impact")
+        normalized["execution_speed"] = 1.0 - self.normalize_metric(metrics.get("execution_delay_ms", 100) / 1000, "execution_delay")
 
         # Market diversity bonus
         markets_tested = len(metrics.get("markets_tested", []))
@@ -340,16 +325,12 @@ class GlobalFitnessConfig:
 
         return weighted_score
 
-    def is_deployment_ready(
-        self, fitness_score: float, metrics: Dict
-    ) -> tuple[bool, str]:
+    def is_deployment_ready(self, fitness_score: float, metrics: Dict) -> tuple[bool, str]:
         """Check if strategy is ready for deployment."""
         reasons = []
 
         if fitness_score < self.thresholds.min_fitness_score:
-            reasons.append(
-                f"Low fitness: {fitness_score:.3f} < {self.thresholds.min_fitness_score}"
-            )
+            reasons.append(f"Low fitness: {fitness_score:.3f} < {self.thresholds.min_fitness_score}")
 
         if metrics.get("sharpe_ratio", 0) < self.thresholds.min_sharpe_ratio:
             reasons.append(f"Low Sharpe: {metrics.get('sharpe_ratio', 0):.2f}")
@@ -366,9 +347,7 @@ class GlobalFitnessConfig:
 
         total_trades = metrics.get("num_trades", 0)
         markets_tested_f = markets_tested
-        trades_per_market = (
-            total_trades / markets_tested_f if markets_tested_f > 0 else 0
-        )
+        trades_per_market = total_trades / markets_tested_f if markets_tested_f > 0 else 0
 
         if trades_per_market < self.thresholds.min_trades_per_market:
             reasons.append(f"Low trades per market: {trades_per_market:.1f}")
@@ -376,10 +355,7 @@ class GlobalFitnessConfig:
         if metrics.get("slippage_impact", 0) > self.thresholds.max_slippage_impact:
             reasons.append(f"High slippage: {metrics.get('slippage_impact', 0):.3f}")
 
-        if (
-            metrics.get("execution_delay_ms", 0)
-            > self.thresholds.max_execution_delay_ms
-        ):
+        if metrics.get("execution_delay_ms", 0) > self.thresholds.max_execution_delay_ms:
             reasons.append(f"Slow execution: {metrics.get('execution_delay_ms', 0)}ms")
 
         return len(reasons) == 0, "; ".join(reasons)
@@ -400,6 +376,4 @@ def quick_update_weights(updates: Dict[str, float]) -> GlobalFitnessConfig:
     current_weights.update(updates)
 
     new_weights = FitnessWeights(**current_weights)
-    return GlobalFitnessConfig(
-        weights=new_weights, thresholds=GLOBAL_FITNESS_CONFIG.thresholds
-    )
+    return GlobalFitnessConfig(weights=new_weights, thresholds=GLOBAL_FITNESS_CONFIG.thresholds)

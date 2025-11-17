@@ -13,10 +13,10 @@ Provides seamless fallback and hybrid approaches.
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass, field
-from datetime import datetime
 import random
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
+
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -92,9 +92,7 @@ class UnifiedEvolutionEngine:
         self.adaptive_params = None
         if use_adaptive_params:
             try:
-                from ..meta_evolution.adaptive_parameters import (
-                    AdaptiveParameterOptimizer,
-                )
+                from ..meta_evolution.adaptive_parameters import AdaptiveParameterOptimizer
 
                 self.adaptive_params = AdaptiveParameterOptimizer()
                 logger.info("✅ Adaptive parameters enabled")
@@ -111,7 +109,7 @@ class UnifiedEvolutionEngine:
             "total_evaluations": 0,
         }
 
-        logger.info(f"UnifiedEvolutionEngine initialized:")
+        logger.info("UnifiedEvolutionEngine initialized:")
         logger.info(f"  LLM: {'✅' if self.llm_available else '❌'}")
         logger.info(f"  GA: {'✅' if self.ga_optimizer else '❌'}")
         logger.info(f"  Adaptive: {'✅' if self.adaptive_params else '❌'}")
@@ -137,9 +135,7 @@ class UnifiedEvolutionEngine:
         Returns:
             EvolutionResult with best strategy and metadata
         """
-        logger.info(
-            f"🔬 Starting evolution: {max_generations} gens, pop={population_size}"
-        )
+        logger.info(f"🔬 Starting evolution: {max_generations} gens, pop={population_size}")
 
         # Determine method
         method = self._select_method()
@@ -242,9 +238,7 @@ class UnifiedEvolutionEngine:
         best_strategy = initial_strategy
         best_fitness = evaluation_func(initial_strategy)
 
-        history = [
-            {"generation": 0, "best_fitness": best_fitness, "avg_fitness": best_fitness}
-        ]
+        history = [{"generation": 0, "best_fitness": best_fitness, "avg_fitness": best_fitness}]
         total_evals = 1
 
         # Get mutation types
@@ -259,9 +253,7 @@ class UnifiedEvolutionEngine:
 
                 try:
                     # LLM mutation
-                    offspring = self.llm_mutator.mutate_strategy(
-                        best_strategy, mutation_type
-                    )
+                    offspring = self.llm_mutator.mutate_strategy(best_strategy, mutation_type)
 
                     # Evaluate
                     fitness = evaluation_func(offspring)
@@ -272,9 +264,7 @@ class UnifiedEvolutionEngine:
                     if fitness > best_fitness:
                         best_fitness = fitness
                         best_strategy = offspring
-                        logger.info(
-                            f"  Gen {gen+1}: New best fitness: {best_fitness:.4f}"
-                        )
+                        logger.info(f"  Gen {gen+1}: New best fitness: {best_fitness:.4f}")
 
                 except Exception as e:
                     logger.warning(f"Mutation failed: {e}")
@@ -291,9 +281,7 @@ class UnifiedEvolutionEngine:
                 }
             )
 
-            logger.info(
-                f"  Gen {gen+1}: Best={best_fitness:.4f}, Avg={avg_fitness:.4f}"
-            )
+            logger.info(f"  Gen {gen+1}: Best={best_fitness:.4f}, Avg={avg_fitness:.4f}")
 
         return EvolutionResult(
             best_strategy=best_strategy,
@@ -323,9 +311,7 @@ class UnifiedEvolutionEngine:
         best_strategy = initial_strategy
         best_fitness = evaluation_func(initial_strategy)
 
-        history = [
-            {"generation": 0, "best_fitness": best_fitness, "avg_fitness": best_fitness}
-        ]
+        history = [{"generation": 0, "best_fitness": best_fitness, "avg_fitness": best_fitness}]
         total_evals = 1
 
         # Initialize population with parameter variations
@@ -362,9 +348,7 @@ class UnifiedEvolutionEngine:
                 }
             )
 
-            logger.info(
-                f"  Gen {gen+1}: Best={best_fitness:.4f}, Avg={avg_fitness:.4f}"
-            )
+            logger.info(f"  Gen {gen+1}: Best={best_fitness:.4f}, Avg={avg_fitness:.4f}")
 
         return EvolutionResult(
             best_strategy=best_strategy,
@@ -410,16 +394,13 @@ class UnifiedEvolutionEngine:
             )
 
             # Combine histories
-            combined_history = (
-                ga_result.evolution_history + llm_result.evolution_history
-            )
+            combined_history = ga_result.evolution_history + llm_result.evolution_history
 
             return EvolutionResult(
                 best_strategy=llm_result.best_strategy,
                 best_fitness=llm_result.best_fitness,
                 generations_completed=max_generations,
-                total_evaluations=ga_result.total_evaluations
-                + llm_result.total_evaluations,
+                total_evaluations=ga_result.total_evaluations + llm_result.total_evaluations,
                 evolution_history=combined_history,
                 method_used="hybrid",
                 success=True,
@@ -450,34 +431,24 @@ class UnifiedEvolutionEngine:
         success = result.best_fitness > 0.6  # Arbitrary threshold
 
         # Update optimizer
-        self.adaptive_params.update_from_result(
-            config_used, result.best_fitness * 100, success  # Convert to 0-100 scale
-        )
+        self.adaptive_params.update_from_result(config_used, result.best_fitness * 100, success)  # Convert to 0-100 scale
 
     def get_statistics(self) -> Dict[str, Any]:
         """Get evolution statistics."""
         return {
             **self.evolution_stats,
-            "llm_success_rate": self.evolution_stats["llm_successes"]
-            / max(1, self.evolution_stats["llm_attempts"]),
-            "ga_success_rate": self.evolution_stats["ga_successes"]
-            / max(1, self.evolution_stats["ga_attempts"]),
-            "adaptive_params": (
-                self.adaptive_params.get_statistics() if self.adaptive_params else {}
-            ),
+            "llm_success_rate": self.evolution_stats["llm_successes"] / max(1, self.evolution_stats["llm_attempts"]),
+            "ga_success_rate": self.evolution_stats["ga_successes"] / max(1, self.evolution_stats["ga_attempts"]),
+            "adaptive_params": (self.adaptive_params.get_statistics() if self.adaptive_params else {}),
         }
 
 
 # Convenience functions
 
 
-def create_evolution_engine(
-    use_llm: bool = True, use_adaptive: bool = True
-) -> UnifiedEvolutionEngine:
+def create_evolution_engine(use_llm: bool = True, use_adaptive: bool = True) -> UnifiedEvolutionEngine:
     """Create unified evolution engine with defaults."""
-    return UnifiedEvolutionEngine(
-        use_llm=use_llm, use_adaptive_params=use_adaptive, fallback_enabled=True
-    )
+    return UnifiedEvolutionEngine(use_llm=use_llm, use_adaptive_params=use_adaptive, fallback_enabled=True)
 
 
 if __name__ == "__main__":
@@ -520,23 +491,19 @@ if __name__ == "__main__":
         population_size=5,
     )
 
-    print(f"\n📊 Evolution Results:")
+    print("\n📊 Evolution Results:")
     print(f"  Method: {result.method_used}")
     print(f"  Success: {result.success}")
     print(f"  Best Fitness: {result.best_fitness:.4f}")
     print(f"  Generations: {result.generations_completed}")
     print(f"  Evaluations: {result.total_evaluations}")
 
-    print(f"\n📈 History:")
+    print("\n📈 History:")
     for entry in result.evolution_history[:5]:
-        print(
-            f"  Gen {entry['generation']}: "
-            f"Best={entry['best_fitness']:.4f}, "
-            f"Avg={entry['avg_fitness']:.4f}"
-        )
+        print(f"  Gen {entry['generation']}: " f"Best={entry['best_fitness']:.4f}, " f"Avg={entry['avg_fitness']:.4f}")
 
     # Show statistics
-    print(f"\n📊 Engine Statistics:")
+    print("\n📊 Engine Statistics:")
     stats = engine.get_statistics()
     for key, value in stats.items():
         if key != "adaptive_params":

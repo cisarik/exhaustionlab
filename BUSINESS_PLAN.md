@@ -1,7 +1,7 @@
 # ExhaustionLab — Business Plan & Profitability Analysis
 
-**Goal:** Generate $10 USD daily profit through automated cryptocurrency trading  
-**Approach:** AI-generated strategies + institutional-grade validation + live execution  
+**Goal:** Generate $10 USD daily profit through automated cryptocurrency trading
+**Approach:** AI-generated strategies + institutional-grade validation + live execution
 **Timeline:** 4-6 weeks to first profitable trades
 
 ---
@@ -256,39 +256,39 @@ Year 1: $2,000 → ~$10,000 (conservative estimate accounting for drawdowns)
 def calculate_strategy_quality_score(backtest_results: BacktestResults) -> QualityScore:
     """
     Calculate comprehensive quality score (0-100) for strategy.
-    
+
     Weights:
     - Profitability: 30% (Sharpe, return, profit factor)
     - Risk Management: 30% (drawdown, recovery, volatility)
     - Execution: 20% (frequency, latency, fill rate)
     - Robustness: 20% (out-of-sample, cross-market, stress test)
     """
-    
+
     # Profitability Score (0-30)
     sharpe_score = min(backtest_results.sharpe_ratio / 3.0, 1.0) * 10
     return_score = min(backtest_results.annual_return / 0.5, 1.0) * 10
     profit_factor_score = min(backtest_results.profit_factor / 3.0, 1.0) * 10
     profitability = sharpe_score + return_score + profit_factor_score
-    
+
     # Risk Management Score (0-30)
     drawdown_score = (1 - min(backtest_results.max_drawdown / 0.25, 1.0)) * 15
     recovery_score = (1 - min(backtest_results.avg_recovery_days / 30, 1.0)) * 10
     volatility_score = (1 - min(backtest_results.monthly_volatility / 0.2, 1.0)) * 5
     risk_mgmt = drawdown_score + recovery_score + volatility_score
-    
+
     # Execution Score (0-20)
     frequency_score = score_signal_frequency(backtest_results.signals_per_day) * 10
     latency_score = (1 - min(backtest_results.avg_latency / 1000, 1.0)) * 5
     fill_score = backtest_results.fill_rate * 5
     execution = frequency_score + latency_score + fill_score
-    
+
     # Robustness Score (0-20)
     oos_score = min(backtest_results.out_of_sample_sharpe / backtest_results.in_sample_sharpe, 1.0) * 10
     cross_market_score = backtest_results.avg_cross_market_performance * 10
     robustness = oos_score + cross_market_score
-    
+
     total_score = profitability + risk_mgmt + execution + robustness
-    
+
     return QualityScore(
         total=total_score,
         profitability=profitability,
@@ -316,34 +316,34 @@ def calculate_strategy_quality_score(backtest_results: BacktestResults) -> Quali
 @dataclass
 class StrategyKnowledge:
     """Curated strategy from proven sources."""
-    
+
     # Identity
     id: str
     name: str
     category: StrategyType  # momentum, mean_reversion, breakout, etc.
-    
+
     # Source & Quality
     source: str  # "github", "tradingview", "research_paper", "manual"
     url: str
     author: str
     popularity_score: float  # stars, upvotes, citations
-    
+
     # Code
     pine_code: str
     pyne_code: str
     description: str
     parameters: Dict[str, Any]
-    
+
     # Performance (if available)
     backtest_metrics: Optional[BacktestResults]
     live_performance: Optional[LivePerformance]
-    
+
     # Meta
     market_focus: List[MarketFocus]
     timeframes: List[str]
     complexity_score: float  # 0-1 (simple to complex)
     tags: List[str]  # ["trend_following", "rsi", "bollinger_bands"]
-    
+
     # Quality
     quality_score: float  # 0-1 (our assessment)
     extraction_date: datetime
@@ -388,7 +388,7 @@ def construct_intelligent_prompt(
     """
     Build LLM prompt with relevant examples and context.
     """
-    
+
     # 1. Select relevant examples
     examples = knowledge_base.find_similar(
         strategy_type=directive.strategy_type,
@@ -396,35 +396,35 @@ def construct_intelligent_prompt(
         limit=5,
         sort_by="quality_score"
     )
-    
+
     # 2. Extract successful patterns
     patterns = analyze_patterns(examples)
     # e.g., "90% of top momentum strategies use RSI + MACD combination"
-    
+
     # 3. Build context
     context = f"""
     You are generating a {directive.strategy_type} strategy for {directive.market_focus}.
-    
+
     Key Requirements:
     - Target Sharpe Ratio: {directive.performance_targets['min_sharpe']}
     - Max Drawdown: {directive.performance_targets['max_drawdown']}
     - Win Rate: {directive.performance_targets['win_rate']}
-    
+
     Successful Patterns (from 5 top strategies):
     {patterns}
-    
+
     Example Strategies:
     {format_examples(examples)}
-    
+
     Guidelines:
     - Use proven indicator combinations: {get_indicator_recommendations(examples)}
     - Avoid common mistakes: {get_common_mistakes(examples)}
     - Implement proper risk management: stop-loss, position sizing
     - Keep signal frequency between 5-20 per day
-    
+
     Generate a PyneCore strategy that follows these patterns.
     """
-    
+
     return IntelligentPrompt(
         system=SYSTEM_PROMPT,
         context=context,
@@ -455,7 +455,7 @@ class ProductionBacktester:
     """
     Production-grade backtesting with realistic market conditions.
     """
-    
+
     def __init__(self):
         self.data_source = BinanceHistoricalData()
         self.cost_model = TransactionCostModel(
@@ -464,7 +464,7 @@ class ProductionBacktester:
             min_spread=0.0005  # 0.05% min spread
         )
         self.market_simulator = MarketSimulator()
-    
+
     def backtest_strategy(
         self,
         strategy_code: str,
@@ -476,7 +476,7 @@ class ProductionBacktester:
         """
         Run production-grade backtest with realistic conditions.
         """
-        
+
         # 1. Load high-quality data (1-minute bars)
         data = self.data_source.fetch_ohlcv(
             symbol=symbol,
@@ -484,21 +484,21 @@ class ProductionBacktester:
             start=start_date,
             end=end_date
         )
-        
+
         # Validate data quality
         data = self.validate_and_clean_data(data)
-        
+
         # 2. Compile strategy
         strategy = self.compile_pyne_strategy(strategy_code)
-        
+
         # 3. Run simulation with realistic execution
         results = []
         portfolio = Portfolio(initial_capital)
-        
+
         for i, bar in enumerate(data.itertuples()):
             # Generate signals
             signals = strategy.process_bar(bar, data[:i])
-            
+
             # Simulate execution with costs
             for signal in signals:
                 execution = self.market_simulator.execute_order(
@@ -509,13 +509,13 @@ class ProductionBacktester:
                 )
                 results.append(execution)
                 portfolio.update(execution)
-            
+
             # Update portfolio
             portfolio.mark_to_market(bar.close)
-        
+
         # 4. Calculate comprehensive metrics
         return self.calculate_metrics(results, portfolio)
-    
+
     def calculate_metrics(
         self,
         trades: List[Trade],
@@ -524,50 +524,50 @@ class ProductionBacktester:
         """
         Calculate all metrics from actual trade data.
         """
-        
+
         # Basic metrics
         total_trades = len(trades)
         winning_trades = [t for t in trades if t.pnl > 0]
         losing_trades = [t for t in trades if t.pnl < 0]
-        
+
         win_rate = len(winning_trades) / total_trades if total_trades > 0 else 0
         avg_win = np.mean([t.pnl for t in winning_trades]) if winning_trades else 0
         avg_loss = np.mean([t.pnl for t in losing_trades]) if losing_trades else 0
         profit_factor = abs(avg_win * len(winning_trades) / (avg_loss * len(losing_trades))) if avg_loss != 0 else 0
-        
+
         # Equity curve
         equity_curve = portfolio.get_equity_curve()
         returns = equity_curve.pct_change().dropna()
-        
+
         # Sharpe ratio
         sharpe = (returns.mean() / returns.std()) * np.sqrt(252 * 24 * 60) if returns.std() > 0 else 0
-        
+
         # Drawdown analysis
         cumulative_returns = (1 + returns).cumprod()
         running_max = cumulative_returns.cummax()
         drawdown = (cumulative_returns - running_max) / running_max
         max_drawdown = drawdown.min()
-        
+
         # Recovery time
         recovery_times = self.calculate_recovery_times(drawdown)
         avg_recovery_days = np.mean(recovery_times) if recovery_times else 0
-        
+
         # Execution quality
         avg_slippage = np.mean([t.slippage for t in trades])
         fill_rate = len([t for t in trades if t.filled]) / len(trades) if trades else 0
-        
+
         return DetailedBacktestResults(
             # Performance
             total_return=portfolio.total_return(),
             annual_return=portfolio.annual_return(),
             sharpe_ratio=sharpe,
             profit_factor=profit_factor,
-            
+
             # Risk
             max_drawdown=abs(max_drawdown),
             avg_drawdown=abs(drawdown.mean()),
             volatility=returns.std() * np.sqrt(252 * 24 * 60),
-            
+
             # Trading
             total_trades=total_trades,
             win_rate=win_rate,
@@ -575,16 +575,16 @@ class ProductionBacktester:
             avg_loss=avg_loss,
             avg_trade_duration=np.mean([t.duration_minutes for t in trades]),
             signals_per_day=total_trades / len(equity_curve) * (24 * 60),
-            
+
             # Execution
             avg_slippage=avg_slippage,
             fill_rate=fill_rate,
             avg_latency=np.mean([t.latency_ms for t in trades]),
-            
+
             # Recovery
             avg_recovery_days=avg_recovery_days,
             max_recovery_days=max(recovery_times) if recovery_times else 0,
-            
+
             # Raw data
             trades=trades,
             equity_curve=equity_curve,
@@ -604,24 +604,24 @@ def validate_robustness(
     """
     Test strategy on multiple time periods and markets.
     """
-    
+
     backtester = ProductionBacktester()
-    
+
     # 1. In-sample vs. Out-of-sample
     train_period = ("2020-01-01", "2022-12-31")  # 3 years
     test_period = ("2023-01-01", "2024-12-31")   # 2 years
-    
+
     train_results = backtester.backtest_strategy(
         strategy_code, symbol, *train_period
     )
-    
+
     test_results = backtester.backtest_strategy(
         strategy_code, symbol, *test_period
     )
-    
+
     # Check degradation
     sharpe_degradation = 1 - (test_results.sharpe_ratio / train_results.sharpe_ratio)
-    
+
     # 2. Walk-forward analysis
     wf_results = walk_forward_optimization(
         strategy_code=strategy_code,
@@ -629,7 +629,7 @@ def validate_robustness(
         window_months=6,
         step_months=1
     )
-    
+
     # 3. Cross-market validation
     markets = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "ADAUSDT"]
     market_results = []
@@ -638,9 +638,9 @@ def validate_robustness(
             strategy_code, market, *test_period
         )
         market_results.append(result)
-    
+
     avg_cross_market_sharpe = np.mean([r.sharpe_ratio for r in market_results])
-    
+
     # 4. Stress testing
     stress_scenarios = {
         "2020_crash": ("2020-03-01", "2020-03-31"),  # COVID crash
@@ -648,14 +648,14 @@ def validate_robustness(
         "2022_bear": ("2022-05-01", "2022-06-30"),   # Terra Luna crash
         "2024_etf": ("2024-01-01", "2024-01-31")     # ETF approval
     }
-    
+
     stress_results = {}
     for scenario_name, period in stress_scenarios.items():
         result = backtester.backtest_strategy(
             strategy_code, symbol, *period
         )
         stress_results[scenario_name] = result
-    
+
     # Calculate robustness score
     robustness_score = calculate_robustness_score(
         train_results=train_results,
@@ -664,7 +664,7 @@ def validate_robustness(
         market_results=market_results,
         stress_results=stress_results
     )
-    
+
     return RobustnessReport(
         in_sample=train_results,
         out_of_sample=test_results,
@@ -716,17 +716,17 @@ class RiskManager:
     """
     Real-time risk management for live trading.
     """
-    
+
     def __init__(self, config: RiskConfig):
         self.config = config
         self.portfolio = Portfolio()
         self.circuit_breaker = CircuitBreaker()
-        
+
     def validate_trade(self, signal: Signal) -> TradeDecision:
         """
         Validate trade against all risk limits.
         """
-        
+
         # 1. Position size check
         position_size = self.calculate_position_size(signal)
         if position_size > self.config.max_position_size:
@@ -734,7 +734,7 @@ class RiskManager:
                 approved=False,
                 reason="Position size exceeds limit"
             )
-        
+
         # 2. Portfolio exposure check
         current_exposure = self.portfolio.total_exposure()
         if current_exposure + position_size > self.config.max_total_exposure:
@@ -742,7 +742,7 @@ class RiskManager:
                 approved=False,
                 reason="Total exposure exceeds limit"
             )
-        
+
         # 3. Daily loss limit check
         daily_pnl = self.portfolio.get_daily_pnl()
         if daily_pnl < -self.config.daily_loss_limit:
@@ -751,7 +751,7 @@ class RiskManager:
                 approved=False,
                 reason="Daily loss limit reached"
             )
-        
+
         # 4. Correlation check (if multiple strategies)
         if self.portfolio.has_open_positions():
             correlation = self.calculate_correlation(signal, self.portfolio.positions)
@@ -760,7 +760,7 @@ class RiskManager:
                     approved=False,
                     reason="High correlation with existing positions"
                 )
-        
+
         # 5. Volatility check
         current_volatility = self.get_market_volatility()
         if current_volatility > self.config.max_volatility:
@@ -769,7 +769,7 @@ class RiskManager:
                 reason="Market volatility too high",
                 recommended_action="Wait for volatility to decrease"
             )
-        
+
         # 6. Liquidity check
         liquidity = self.check_market_liquidity(signal.symbol)
         if liquidity.volume_24h < self.config.min_liquidity:
@@ -777,7 +777,7 @@ class RiskManager:
                 approved=False,
                 reason="Insufficient market liquidity"
             )
-        
+
         # All checks passed
         return TradeDecision(
             approved=True,
@@ -785,17 +785,17 @@ class RiskManager:
             stop_loss=self.calculate_stop_loss(signal),
             take_profit=self.calculate_take_profit(signal)
         )
-    
+
     def calculate_position_size(self, signal: Signal) -> float:
         """
         Calculate position size using Kelly Criterion with modifications.
         """
-        
+
         # Get strategy statistics
         win_rate = signal.strategy.win_rate
         avg_win = signal.strategy.avg_win
         avg_loss = signal.strategy.avg_loss
-        
+
         # Kelly formula: f = (p*W - L) / W
         # where p = win probability, W = avg win, L = avg loss
         if avg_win <= 0 or avg_loss <= 0:
@@ -804,23 +804,23 @@ class RiskManager:
         else:
             kelly_fraction = (win_rate * avg_win - (1-win_rate) * avg_loss) / avg_win
             kelly_fraction = max(0, min(kelly_fraction, 0.25))  # Cap at 25%
-        
+
         # Use half Kelly for safety
         position_fraction = kelly_fraction * 0.5
-        
+
         # Adjust for volatility
         current_vol = self.get_market_volatility()
         normal_vol = 0.02  # 2% daily volatility
         vol_adjustment = normal_vol / max(current_vol, 0.01)
         position_fraction *= vol_adjustment
-        
+
         # Calculate position size in USD
         account_value = self.portfolio.get_total_value()
         position_size = account_value * position_fraction
-        
+
         # Cap at max position size
         position_size = min(position_size, self.config.max_position_size)
-        
+
         return position_size
 ```
 
@@ -831,23 +831,23 @@ class PerformanceMonitor:
     """
     Real-time performance monitoring and alerting.
     """
-    
+
     def __init__(self):
         self.metrics_db = MetricsDatabase()
         self.alert_system = AlertSystem()
-        
+
     def monitor_strategy(self, strategy_id: str):
         """
         Continuous monitoring of live strategy performance.
         """
-        
+
         while True:
             # Fetch recent performance
             metrics = self.calculate_live_metrics(strategy_id)
-            
+
             # Check against thresholds
             alerts = []
-            
+
             # 1. Sharpe ratio degradation
             if metrics.live_sharpe < metrics.backtest_sharpe * 0.7:
                 alerts.append(Alert(
@@ -855,7 +855,7 @@ class PerformanceMonitor:
                     message=f"Sharpe ratio degraded: {metrics.live_sharpe:.2f} vs {metrics.backtest_sharpe:.2f}",
                     action="Review strategy, consider pause"
                 ))
-            
+
             # 2. Drawdown exceeds limit
             if metrics.current_drawdown > 0.15:
                 alerts.append(Alert(
@@ -864,7 +864,7 @@ class PerformanceMonitor:
                     action="PAUSE TRADING"
                 ))
                 self.pause_strategy(strategy_id)
-            
+
             # 3. Win rate degradation
             expected_win_rate = metrics.backtest_win_rate
             if metrics.live_win_rate < expected_win_rate * 0.8:
@@ -873,7 +873,7 @@ class PerformanceMonitor:
                     message=f"Win rate degraded: {metrics.live_win_rate:.1%} vs {expected_win_rate:.1%}",
                     action="Monitor closely"
                 ))
-            
+
             # 4. Execution quality
             if metrics.avg_slippage > 0.005:  # 0.5%
                 alerts.append(Alert(
@@ -881,7 +881,7 @@ class PerformanceMonitor:
                     message=f"High slippage detected: {metrics.avg_slippage:.2%}",
                     action="Consider reducing position size"
                 ))
-            
+
             # 5. Daily profit target
             if metrics.daily_pnl >= 10.0:
                 alerts.append(Alert(
@@ -889,14 +889,14 @@ class PerformanceMonitor:
                     message=f"Daily target reached: ${metrics.daily_pnl:.2f}",
                     action="Consider taking profits"
                 ))
-            
+
             # Send alerts
             for alert in alerts:
                 self.alert_system.send(alert)
-            
+
             # Store metrics
             self.metrics_db.store(metrics)
-            
+
             # Sleep until next check
             time.sleep(60)  # Check every minute
 ```

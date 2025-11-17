@@ -1,9 +1,186 @@
-# AGENTS.md — Architect Manifesto (ExhaustionLab v2.0.0)
+# AGENTS.md — Architect Manifesto (ExhaustionLab v3.0.0)
+
+---
+
+## 🚀 **v3.0 PRODUCTION UPGRADE - WHAT'S NEW**
+
+### Major Architectural Improvements
+
+ExhaustionLab v3.0 introduces production-grade infrastructure with enterprise-level observability, standardization, and operational excellence.
+
+#### 1. **Unified Configuration System** (`app/config/settings.py`)
+- **Pydantic BaseSettings** — Type-safe, validated configuration from `.env`
+- **Hierarchical Settings** — Nested configs: exchange, LLM, risk, evolution, UI, database, cache, observability
+- **Environment-Driven** — Single source of truth for all configuration
+- **Secret Masking** — Automatic credential masking in logs and API responses
+
+```python
+from exhaustionlab.app.config.settings import get_settings
+
+settings = get_settings()
+print(settings.exchange.api_key)  # Auto-loaded from BINANCE_API_KEY
+print(settings.llm.base_url)      # Auto-loaded from LLM_BASE_URL
+```
+
+#### 2. **Structured Logging with Request Tracing** (`webui/observability.py`, `webui/middleware.py`)
+- **JSON Logging** — Structured logs with Loguru (prod) or pretty format (dev)
+- **Request IDs** — UUID tracking for each API request throughout entire lifecycle
+- **Duration Tracking** — Automatic request/response latency measurement
+- **Log Rotation** — Configurable size/time-based rotation
+- **Intercepts Everything** — Captures uvicorn, fastapi, and all library logs
+
+```json
+{
+  "timestamp": "2025-11-17T12:34:56.789Z",
+  "level": "INFO",
+  "message": "Request completed",
+  "request_id": "abc123",
+  "method": "GET",
+  "path": "/api/evolution/overview",
+  "status_code": 200,
+  "duration_ms": 45.23
+}
+```
+
+#### 3. **Prometheus Metrics** (`webui/observability.py`, `/metrics` endpoint)
+- **HTTP Metrics** — Request count, duration histogram, in-flight requests, errors
+- **Evolution Metrics** — Strategies generated, fitness scores, generation duration
+- **LLM Metrics** — Requests, latency, tokens used, success/failure rate
+- **Trading Metrics** — Trades executed, PnL distribution, active deployments
+- **Custom Metrics** — Easy to add domain-specific metrics
+
+```python
+from exhaustionlab.webui.observability import get_metrics
+
+metrics = get_metrics()
+metrics.record_strategy_generated("llm", fitness=0.85, duration=12.3)
+```
+
+#### 4. **Standardized API Responses** (`webui/models/responses.py`)
+- **Pydantic Response Models** — Type-safe, validated, self-documenting
+- **Consistent Envelope** — All responses wrapped in `ApiResponse<T>` or `ErrorResponse`
+- **Request ID Propagation** — Every response includes `request_id` for tracing
+- **OpenAPI Docs** — Auto-generated API documentation at `/api/docs`
+
+```json
+{
+  "status": "success",
+  "data": { "strategies": [...] },
+  "message": "Strategies retrieved successfully",
+  "timestamp": "2025-11-17T12:34:56.789Z",
+  "request_id": "abc123"
+}
+```
+
+#### 5. **Production Docker Setup** (Dockerfile, docker-compose.yml)
+- **Multi-Stage Build** — Separate builder and runtime stages
+- **Non-Root User** — Security: runs as UID/GID 1000
+- **Health Checks** — Built-in `/health` endpoint with container health monitoring
+- **Security Updates** — Automatic `apt-get upgrade` in build
+- **Resource Limits** — CPU/memory limits + reservations
+- **Monitoring Stack** — Optional Prometheus + Grafana with `--profile monitoring`
+
+```bash
+docker-compose up -d                          # Basic stack
+docker-compose --profile monitoring up -d     # With monitoring
+```
+
+#### 6. **One-Command Workflow** (Makefile)
+- **make install** — Install all dependencies
+- **make test** — Run full test suite
+- **make test-coverage** — Generate HTML coverage report
+- **make lint** — Code quality checks (black, ruff, isort)
+- **make fmt** — Auto-format code
+- **make webui** — Start production web UI
+- **make webui-dev** — Start with hot reload
+- **make docker-build / docker-run** — Docker operations
+- **make ci-local** — Run full CI pipeline locally
+
+#### 7. **Organized Project Structure**
+- **examples/** — All demo scripts moved from root (17 files organized)
+- **exhaustionlab/webui/models/** — Request/response Pydantic models
+- **exhaustionlab/webui/middleware.py** — Logging + metrics middleware
+- **exhaustionlab/webui/observability.py** — Centralized logging/metrics
+- **docker/** — Docker configs (entrypoint.sh, prometheus.yml)
+
+#### 8. **Enhanced Operational Excellence**
+- **DEPLOYMENT.md** — Comprehensive production deployment guide
+- **Environment Matrix** — Development, staging, production configs
+- **Security Checklist** — API key management, CORS, HTTPS, rate limiting
+- **Monitoring Setup** — Prometheus, Grafana, alerting examples
+- **Systemd Service** — Production Linux deployment template
+
+---
+
+## 🎯 **v3.0 Quick Start**
+
+### Development Workflow
+
+```bash
+# 1. Clone and setup
+git clone <repo>
+cd exhaustionlab
+
+# 2. Install (one command!)
+make install
+
+# 3. Configure
+cp .env.example .env
+nano .env  # Add your API keys
+
+# 4. Start web UI (one command!)
+make webui
+# OR with hot reload
+make webui-dev
+
+# 5. Access
+# Web UI:    http://localhost:8080
+# Health:    http://localhost:8080/health
+# Metrics:   http://localhost:8080/metrics
+# API Docs:  http://localhost:8080/api/docs
+```
+
+### Production Deployment
+
+```bash
+# Method 1: Docker (recommended)
+make docker-build
+make docker-run
+
+# Method 2: Docker Compose with monitoring
+docker-compose --profile monitoring up -d
+
+# Method 3: Systemd service
+# See DEPLOYMENT.md for details
+```
+
+### Code Quality
+
+```bash
+# Format code
+make fmt
+
+# Check code quality
+make lint
+
+# Run tests
+make test
+
+# Generate coverage
+make test-coverage
+
+# Run CI locally
+make ci-local
+```
+
+---
+
+# AGENTS.md — Architect Manifesto (ExhaustionLab v2.0.0 → v3.0.0)
 
 ## Vision & Mission
 **Vision:** Vytvoriť AI-driven production-grade platform pre automated cryptocurrency obchodovanie s reálnou ziskovanosťou a ziskom $.
 
-**Mission:** 
+**Mission:**
 1. **Visual Layer** — TradingView-like candlestick widget s multi-panel layout (SQZMOM + Volume) a real-time signal overlays.
 2. **Data Infrastructure** — Binance REST/WS streaming pre low-latency kline + bookTicker s intelligentnými retry mechanismami.
 3. **PyneCore Integration** — Kompletná integrácia PyneCore pre backtesting, signal validation a live trading execution.
@@ -60,7 +237,7 @@ Guidance: keep future tests in `tests/` to avoid collecting demo scripts in the 
 - **Validation Pipeline** (`validators.py`, `quality_metrics.py`)
 - **Market Testing** (`multi_market_evaluator.py`, `cross_asset_validation.py`)
 
-### 5. AI Orchestration (`app/llm/`)  
+### 5. AI Orchestration (`app/llm/`)
 - **Local LLM Client** (`llm_client.py`) — DeepSeek API integration s fallback mechanizmom
 - **Prompt Engineering** (`prompts.py`, `prompt_templates/`, `context_manager.py`)
 - **Strategy Generator** (`strategy_generator.py`, `mutation_engine.py`, `quality_assessment.py`)
@@ -89,7 +266,7 @@ Guidance: keep future tests in `tests/` to avoid collecting demo scripts in the 
 
 ### Production Standards
 - **Zero Magic Numbers** — All constants v `app/config/constants.py`
-- **Environment-Driven Config** — `.env` pre secrets, `settings.json` pre environments  
+- **Environment-Driven Config** — `.env` pre secrets, `settings.json` pre environments
 - **Comprehensive Logging** — Structured logging s Loguru, different log levels pre various components
 - **Graceful Degradation** — Fallback mechanizmy pre LLM, API, data source failures
 - **Resource Limits** — CPU/memory/thread limits pre prevent system overload
@@ -98,18 +275,18 @@ Guidance: keep future tests in `tests/` to avoid collecting demo scripts in the 
 
 ### 🔥 **High Priority** (This Sprint)
 1. **LLM-Powered Strategy Generation** — Complete DeepSeek integration with web context
-2. **Production Validation Pipeline** — Institutional-grade live trading readiness assessment  
+2. **Production Validation Pipeline** — Institutional-grade live trading readiness assessment
 3. **Multi-Market Robustness** — Cross-asset backtesting with stress testing
 4. **Real-Time Risk Management** — Dynamic position sizing, VAR-based position limits
 
-### 🔥 **Medium Priority** (Next Sprint)  
+### 🔥 **Medium Priority** (Next Sprint)
 5. **GUI Integration with LLM** — Live strategy editing and backtesting results
 6. **Market Regime Detection** — Automatic volatility/trend regime classification
 7. **Execution Optimization** — Slippage mitigation, smart order routing simulation
 8. **Performance Analytics** — Real-time strategy performance monitoring and alerting
 
 ### 🔥 **Low Priority** (Backlog)
-9. **Multi-Symbol Trading** — Simultaneous asset allocation strategies  
+9. **Multi-Symbol Trading** — Simultaneous asset allocation strategies
 10. **Advanced Visualization** — 3D market depth visualization, correlation heat maps
 11. **Strategy Portfolio Management** — Multi-strategy allocation and risk parity
 12. **Cross-Exchange Trading** — Arbitrage detection and execution across venues
@@ -120,7 +297,7 @@ Guidance: keep future tests in `tests/` to avoid collecting demo scripts in the 
 ```toml
 pyproject.dependencies = [
     "PySide6>=6.8.0",           # GUI framework
-    "pyqtgraph>=0.13.7",        # High-performance plotting  
+    "pyqtgraph>=0.13.7",        # High-performance plotting
     "pynesys-pynecore",          # PineScript→Python engine
     "websockets>=12.0",           # WebSocket streaming
     "pandas>=2.3.0",              # Data manipulation
@@ -161,7 +338,7 @@ pyproject.dependencies = [
 - **Configuration Layer**: ParamSpec-driven settings with validation ✅
 - **Strategy Configuration**: Complete StrategyConfig system with templates ⭐ NEW
 
-### Phase 2: LLM Integration ✅ COMPLETE  
+### Phase 2: LLM Integration ✅ COMPLETE
 - **Local LLM Client**: DeepSeek API s comprehensive error handling ✅
 - **Intelligent Prompts**: Pine Script → PyneCore translation s deep context ✅
 - **Code Validation**: Multi-layer validation (syntax + structure + API + runtime) ✅
@@ -171,7 +348,7 @@ pyproject.dependencies = [
 
 ### Phase 3: Meta-Evolution ✅ COMPLETE (crawler integration: partial)
 - **Knowledge Extraction**: Crawler scaffolding present; real API extraction and quality scoring require hardening.
-- **Intelligent Orchestration**: Strategic directive system (6 objectives) with adaptive learning ✅ 
+- **Intelligent Orchestration**: Strategic directive system (6 objectives) with adaptive learning ✅
 - **Production Validation**: Institutional-grade metrics (15+ calculations) ✅
 - **Adaptive Parameters**: Self-optimizing meta-parameters (multi-armed bandit) ⭐ NEW
 - **Performance Metrics**: Sharpe, Sortino, Calmar, VaR, CVaR, Ulcer Index ⭐ NEW
@@ -185,7 +362,7 @@ pyproject.dependencies = [
 - **Multi-Asset Allocation**: Portfolio-level strategy management
 
 ### Phase 5: Advanced Features 🔮 (Future)
-- **AI Portfolio Management**: Reinforcement learning for portfolio optimization  
+- **AI Portfolio Management**: Reinforcement learning for portfolio optimization
 - **Market Microstructure**: HFT strategies with order flow analysis
 - **Cross-Asset Arbitrage**: Multi-exchange arbitrage detection + execution
 - **Compliance Engine**: REG/FINRA compliant trading with audit trails
@@ -195,14 +372,14 @@ pyproject.dependencies = [
 ### Pre-Production Risk Controls
 - **Max Position Size**: 2% of portfolio per strategy
 - **Daily Loss Limit**: 1%硬 stop pre all strategies
-- **Correlation Monitoring**: Automatic position reduction if correlation > 0.7  
+- **Correlation Monitoring**: Automatic position reduction if correlation > 0.7
 - **Liquidity Constraints**: Minimum 24h volume > $50M pre individual assets
 - **Execution Limits**: Max 100 trades/day pre prevent market impact
 
 ### Production Risk Metrics
 - **Live Trading Score**: Minimum 70/100 pre deployment
 - **Sharpe Ratio Threshold**: > 1.2 over 6-month rolling window
-- **Maximum Drawdown**: < 25% pre any strategy activation  
+- **Maximum Drawdown**: < 25% pre any strategy activation
 - **Execution Quality**: > 95% fill rate, < 0.5% slippage average
 - **Stability Score**: Monthly consistency > 0.6 over evaluation period
 
@@ -227,39 +404,39 @@ log = logging.getLogger(__name__)
 class TradingMetrics:
     """Core metrics required for live trading validation"""
     sharpe_ratio: float
-    max_drawdown: float  
+    max_drawdown: float
     win_rate: float
     execution_quality: float
     risk_adjusted_return: float
 
 class TradingStrategy(Protocol):
     """Protocol for all trading strategies"""
-    
+
     @runtime_check
     def initialize(self, config: Dict[str, Any]) -> bool:
         """Initialize strategy with configuration"""
         return True
-    
-    @runtime_check  
+
+    @runtime_check
     def process_kline(self, kline: KlineData) -> Optional[SignalSet]:
         """Process new kline data, return signals or None"""
         return None
-    
+
     @runtime_check
     def on_position_opened(self, signal: Signal, position: Position) -> None:
         """Callback when position is opened"""
         log.info(f"Position opened: {signal.type} at {signal.price}")
-    
+
     @runtime_check
     def on_position_closed(self, position: Position, pnl: float) -> None:
         """Callback when position is closed"""
         log.info(f"Position closed: PnL={pnl:.2f}")
-    
+
     @runtime_check
     def validate_state(self) -> bool:
         """Validate internal state consistency"""
         return True
-    
+
     @runtime_check
     def get_risk_limits(self) -> RiskLimits:
         """Get current risk limits configuration"""
@@ -276,21 +453,21 @@ class TradingStrategy(Protocol):
 ### Documentation Standards
 ```python
 def calculate_sharpe_ratio(
-    returns: pd.Series, 
+    returns: pd.Series,
     risk_free_rate: float = 0.02,
     trading_days: int = 252
 ) -> float:
     """
     Calculate annualized Sharpe ratio from returns series.
-    
+
     Args:
         returns: Pandas Series of daily returns
         risk_free_rate: Annual risk-free rate (default 2%)
         trading_days: Number of trading days per year (default 252)
-        
+
     Returns:
         Annualized Sharpe ratio
-        
+
     Examples:
         >>> import pandas as pd
         >>> np.random.seed(42)
@@ -301,18 +478,18 @@ def calculate_sharpe_ratio(
     """
     if returns.empty():
         return 0.0
-        
+
     excess_returns = returns - risk_free_rate / trading_days
     if len(returns) < 2 or returns.std() == 0:
         return 0.0
-        
+
     return excess_returns.mean() / returns.std() * np.sqrt(trading_days)
 ```
 
 ## Emergency Protocols
 
 ### System Failure Recovery
-1. **Cascade Detection** — Automated detection of system failures across components  
+1. **Cascade Detection** — Automated detection of system failures across components
 2. **Graceful Degradation** — Fallback to stable state (basic indicators, manual control)
 3. **Data Source Failover** — Alternative feeds, historical data replay
 4. **LLM Fallback** — Switch to parameter-based evolution if LLM unavailable
@@ -514,7 +691,7 @@ print(f"Initial Sharpe target: {directive.performance_target.min_sharpe_ratio}")
 for i in range(5):
     results = {'sharpe_ratio': 1.8, 'max_drawdown': 0.15}
     directive = manager.adapt_directive(directive, results, success=True)
-    
+
 print(f"Final Sharpe target: {directive.performance_target.min_sharpe_ratio}")
 # Output: Sharpe increased from 1.50 → 1.74 (+16%)
 ```
@@ -586,7 +763,7 @@ optimizer.update_from_result(
 if optimizer.total_attempts % 10 == 0:
     stats = optimizer.get_statistics()
     print(format_optimizer_report(optimizer))
-    
+
     # Check discovered correlations
     for param, corr_data in stats['correlations'].items():
         if 'performance' in corr_data:

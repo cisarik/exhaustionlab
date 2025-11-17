@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass, asdict
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Union
+from dataclasses import asdict, dataclass
 from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 from ..llm import PromptContext
 
@@ -97,17 +97,9 @@ class MetaParameters:
                 "ADX",
             ]
         if self.timeframes is None:
-            self.timeframes = (
-                ["1m", "5m", "15m", "1h"]
-                if self.market_focus == MarketFocus.SPOT_CRYPTO
-                else ["5m", "15m", "1h", "4h"]
-            )
+            self.timeframes = ["1m", "5m", "15m", "1h"] if self.market_focus == MarketFocus.SPOT_CRYPTO else ["5m", "15m", "1h", "4h"]
         if self.risk_levels is None:
-            self.risk_levels = (
-                ["conservative", "balanced"]
-                if self.evolution_intensity == EvolutionIntensity.EXPLORATORY
-                else ["balanced", "aggressive"]
-            )
+            self.risk_levels = ["conservative", "balanced"] if self.evolution_intensity == EvolutionIntensity.EXPLORATORY else ["balanced", "aggressive"]
 
     def to_prompt_context(self) -> PromptContext:
         """Convert meta-parameters to LLM prompt context."""
@@ -397,9 +389,7 @@ class MetaEvolutionConfig:
 
         return config
 
-    def get_context_examples(
-        self, meta_params: MetaParameters, limit: int = 5
-    ) -> List[StrategyExample]:
+    def get_context_examples(self, meta_params: MetaParameters, limit: int = 5) -> List[StrategyExample]:
         """Get curated examples for LLM context based on meta-parameters."""
 
         # Filter examples based on strategy type and market
@@ -409,27 +399,16 @@ class MetaEvolutionConfig:
         filtered_examples = []
         for example in self.example_database:
             # Check for relevance
-            tags_match = any(
-                strategy_type_filter in tag.lower()
-                or market_focus_filter in tag.lower()
-                for tag in example.tags
-            )
+            tags_match = any(strategy_type_filter in tag.lower() or market_focus_filter in tag.lower() for tag in example.tags)
 
-            desc_match = (
-                strategy_type_filter in example.description.lower()
-                or strategy_type_filter in example.name.lower()
-            )
+            desc_match = strategy_type_filter in example.description.lower() or strategy_type_filter in example.name.lower()
 
             if tags_match or desc_match:
                 filtered_examples.append(example)
 
         # Sort by performance if available
         filtered_examples.sort(
-            key=lambda x: (
-                x.performance_metrics.get("sharpe_ratio", 0)
-                if x.performance_metrics
-                else 0
-            ),
+            key=lambda x: (x.performance_metrics.get("sharpe_ratio", 0) if x.performance_metrics else 0),
             reverse=True,
         )
 
@@ -450,11 +429,7 @@ class MetaEvolutionConfig:
                 "key_indicators": meta_params.indicator_universe,
                 "signal_patterns": strategy_info.get("signal_patterns", []),
                 "timeframe_preference": meta_params.timeframes,
-                "risk_profile": (
-                    meta_params.risk_levels[0]
-                    if meta_params.risk_levels
-                    else "balanced"
-                ),
+                "risk_profile": (meta_params.risk_levels[0] if meta_params.risk_levels else "balanced"),
             },
             "performance_constraints": {
                 "max_drawdown_target": meta_params.max_drawdown_target,
@@ -480,9 +455,7 @@ class MetaEvolutionConfig:
             ],
             "evolution_directives": {
                 "style": meta_params.prompt_style,
-                "creativity_level": self._map_intensity_to_creativity(
-                    meta_params.evolution_intensity
-                ),
+                "creativity_level": self._map_intensity_to_creativity(meta_params.evolution_intensity),
                 "domain_focus": "quantitative_trading",
                 "validation_requirements": [
                     "syntactically_valid",
@@ -514,20 +487,12 @@ class MetaEvolutionConfig:
         # Adaptive learning: adjust parameters based on performance
         if current_sharpe < self.current_meta_params.expected_sharpe_target:
             # Underperforming: increase learning rate and exploration
-            self.current_meta_params.learning_rate = min(
-                0.25, self.current_meta_params.learning_rate * 1.2
-            )
-            self.current_meta_params.diversity_threshold = min(
-                0.5, self.current_meta_params.diversity_threshold * 1.1
-            )
+            self.current_meta_params.learning_rate = min(0.25, self.current_meta_params.learning_rate * 1.2)
+            self.current_meta_params.diversity_threshold = min(0.5, self.current_meta_params.diversity_threshold * 1.1)
         elif current_sharpe > self.current_meta_params.expected_sharpe_target * 1.5:
             # Overperforming: focus on exploitation
-            self.current_meta_params.learning_rate = max(
-                0.05, self.current_meta_params.learning_rate * 0.8
-            )
-            self.current_meta_params.diversity_threshold = max(
-                0.15, self.current_meta_params.diversity_threshold * 0.9
-            )
+            self.current_meta_params.learning_rate = max(0.05, self.current_meta_params.learning_rate * 0.8)
+            self.current_meta_params.diversity_threshold = max(0.15, self.current_meta_params.diversity_threshold * 0.9)
 
         # Adjust risk targets based on realized risk
         if current_drawdown > self.current_meta_params.max_drawdown_target * 1.2:
@@ -537,13 +502,17 @@ class MetaEvolutionConfig:
             # Much lower than expected: can take more risk
             self.current_meta_params.max_drawdown_target *= 1.1
 
+        # Adjust win-rate expectations based on observed performance
+        if current_win_rate < self.current_meta_params.min_win_rate_target * 0.9:
+            self.current_meta_params.min_win_rate_target = max(0.30, self.current_meta_params.min_win_rate_target * 0.95)
+        elif current_win_rate > self.current_meta_params.min_win_rate_target * 1.1:
+            self.current_meta_params.min_win_rate_target = min(0.80, self.current_meta_params.min_win_rate_target * 1.05)
+
     def save_configuration(self, filename: str = "meta_evolution_config.json"):
         """Save current configuration to file."""
         config_data = {
             "meta_parameters": asdict(self.current_meta_params),
-            "strategy_templates": {
-                k.value: v for k, v in self.strategy_templates.items()
-            },
+            "strategy_templates": {k.value: v for k, v in self.strategy_templates.items()},
             "example_count": len(self.example_database),
         }
 
@@ -568,16 +537,16 @@ def main():
     rsi_oversold = input.float("RSI Oversold", 30)
     rsi_overbought = input.float("RSI Overbought", 70)
     volume_mult = input.float("Volume Multiplier", 1.5)
-    
+
     # Calculations
     rsi = close.rsi(rsi_length)
     vol_ma = volume.sma(20)
     vol_spike = volume > vol_ma * volume_mult
-    
+
     # Signals
     oversold = rsi < rsi_oversold and vol_spike
     overbought = rsi > rsi_overbought and vol_spike
-    
+
     # Plot
     plot(rsi, "RSI", color=color.purple)
     plot(rsi_oversold, "Oversold", color=color.red)
@@ -593,20 +562,20 @@ from pynecore import Series, input, plot, color, script
 
 @script.indicator(title="MACD Momentum", overlay=False)
 def main():
-    # Inputs  
+    # Inputs
     fast = input.int("Fast", 12)
     slow = input.int("Slow", 26)
     signal = input.int("Signal", 9)
-    
+
     # Calculations
     macd_line = (close.ema(fast) - close.ema(slow))
     signal_line = macd_line.ema(signal)
     histogram = macd_line - signal_line
-    
+
     # Momentum detection
     macd_bull = macd_line > signal_line and macd_line[1] <= signal_line[1]
     macd_bear = macd_line < signal_line and macd_line[1] >= signal_line[1]
-    
+
     # Plot
     plot(macd_line, "MACD", color=color.blue)
     plot(signal_line, "Signal", color=color.orange)
@@ -627,20 +596,20 @@ def main():
     atr_len = input.int("ATR Length", 14)
     atr_mult = input.float("ATR Multiplier", 2.0)
     vol_mult = input.float("Volume Mult", 1.5)
-    
+
     # Calculations
     sma = close.sma(sma_len)
     atr = Range.atr(atr_len)
     upper_band = sma + (atr * atr_mult)
     lower_band = sma - (atr * atr_mult)
-    
+
     vol_ma = volume.sma(20)
     vol_spike = volume > vol_ma * vol_mult
-    
+
     # Breakout signals
     buy_breakout = close[1] <= upper_band[1] and close > upper_band and vol_spike
     sell_breakout = close[1] >= lower_band[1] and close < lower_band and vol_spike
-    
+
     # Plot
     plot(sma, "SMA", color=color.blue)
     plot(upper_band, "Upper", color=color.red)

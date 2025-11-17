@@ -10,12 +10,10 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+from dataclasses import asdict, dataclass
 from datetime import datetime
-from pathlib import Path
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, asdict
 from enum import Enum
-import json
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -133,11 +131,9 @@ class EvolutionService:
         """Lazy-load intelligent orchestrator."""
         if self._orchestrator is None:
             try:
-                from ..app.meta_evolution.intelligent_orchestrator import (
-                    IntelligentOrchestrator,
-                )
-                from ..app.meta_evolution.meta_config import MetaEvolutionConfig
                 from ..app.llm.llm_client import LocalLLMClient
+                from ..app.meta_evolution.intelligent_orchestrator import IntelligentOrchestrator
+                from ..app.meta_evolution.meta_config import MetaEvolutionConfig
 
                 self._llm_client = LocalLLMClient()
                 config = MetaEvolutionConfig()
@@ -279,9 +275,7 @@ class EvolutionService:
 
                 # LLM generation
                 if use_llm and generation <= num_generations:
-                    llm_strategies = await self._generate_llm_strategies(
-                        population_size, generation
-                    )
+                    llm_strategies = await self._generate_llm_strategies(population_size, generation)
                     generation_strategies.extend(llm_strategies)
 
                 # Include crawled strategies in first generation
@@ -312,9 +306,7 @@ class EvolutionService:
                 self.status = EvolutionStatus.EVALUATING
                 fitnesses = [r.fitness for r in self.backtest_results.values()]
                 self.progress.best_fitness = max(fitnesses) if fitnesses else 0.0
-                self.progress.avg_fitness = (
-                    sum(fitnesses) / len(fitnesses) if fitnesses else 0.0
-                )
+                self.progress.avg_fitness = sum(fitnesses) / len(fitnesses) if fitnesses else 0.0
                 self.progress.elapsed_time = time.time() - self.start_time
 
                 await self._emit_event(
@@ -357,9 +349,7 @@ class EvolutionService:
                 )
             )
 
-    async def _generate_llm_strategies(
-        self, count: int, generation: int
-    ) -> List[Dict[str, Any]]:
+    async def _generate_llm_strategies(self, count: int, generation: int) -> List[Dict[str, Any]]:
         """Generate strategies using LLM."""
         strategies = []
 
@@ -479,15 +469,11 @@ class EvolutionService:
 
     def get_hall_of_fame(self, limit: int = 10) -> List[Dict[str, Any]]:
         """Get top strategies by fitness."""
-        sorted_strategies = sorted(
-            self.backtest_results.items(), key=lambda x: x[1].fitness, reverse=True
-        )
+        sorted_strategies = sorted(self.backtest_results.items(), key=lambda x: x[1].fitness, reverse=True)
 
         hall_of_fame = []
         for strategy_id, result in sorted_strategies[:limit]:
-            strategy_info = next(
-                (s for s in self.strategies if s["strategy_id"] == strategy_id), {}
-            )
+            strategy_info = next((s for s in self.strategies if s["strategy_id"] == strategy_id), {})
 
             hall_of_fame.append(
                 {

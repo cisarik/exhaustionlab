@@ -10,14 +10,14 @@ Extracts complete strategy profiles from GitHub repositories:
 - Test files
 """
 
-import requests
+import base64
+import logging
+import random
 import re
 import time
-import random
-from typing import Dict, List, Optional, Any
-from pathlib import Path
-import logging
-import base64
+from typing import Any, Dict, List, Optional
+
+import requests
 
 from .mock_repo_data import MOCK_REPOSITORIES
 
@@ -132,18 +132,14 @@ class GitHubCodeExtractor:
 
         return strategy
 
-    def _extract_mock_strategy(
-        self, repo_full_name: str, mock_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _extract_mock_strategy(self, repo_full_name: str, mock_data: Dict[str, Any]) -> Dict[str, Any]:
         """Build strategy payload from local mock data."""
         if "error" in mock_data:
             raise RuntimeError(mock_data["error"])
 
         strategy = {
             "repo_full_name": repo_full_name,
-            "name": mock_data.get("repo_info", {}).get(
-                "name", repo_full_name.split("/")[-1]
-            ),
+            "name": mock_data.get("repo_info", {}).get("name", repo_full_name.split("/")[-1]),
             "platform": mock_data.get("repo_info", {}).get("platform", "github"),
             "extraction_status": "complete",
             "extraction_notes": [],
@@ -264,9 +260,7 @@ class GitHubCodeExtractor:
         query = " ".join(query_parts)
 
         try:
-            response = self.session.get(
-                url, params={"q": query, "per_page": 10}, timeout=10
-            )
+            response = self.session.get(url, params={"q": query, "per_page": 10}, timeout=10)
             response.raise_for_status()
 
             data = response.json()
@@ -274,11 +268,7 @@ class GitHubCodeExtractor:
 
             # Filter excluded
             if exclude:
-                items = [
-                    item
-                    for item in items
-                    if not any(ex in item["name"] for ex in exclude)
-                ]
+                items = [item for item in items if not any(ex in item["name"] for ex in exclude)]
 
             return [{"name": item["name"], "url": item["url"]} for item in items]
 
@@ -325,9 +315,7 @@ class GitHubCodeExtractor:
             return meta
 
         lines = code.split("\n")
-        meta["lines_of_code"] = len(
-            [l for l in lines if l.strip() and not l.strip().startswith("//")]
-        )
+        meta["lines_of_code"] = len([line for line in lines if line.strip() and not line.strip().startswith("//")])
 
         # Extract version
         version_match = re.search(r"//@version\s*=\s*(\d+)", code)
@@ -335,9 +323,7 @@ class GitHubCodeExtractor:
             meta["pine_version"] = int(version_match.group(1))
 
         # Extract title
-        title_match = re.search(
-            r'(?:indicator|strategy)\s*\(\s*(?:title\s*=\s*)?["\']([^"\']+)["\']', code
-        )
+        title_match = re.search(r'(?:indicator|strategy)\s*\(\s*(?:title\s*=\s*)?["\']([^"\']+)["\']', code)
         if title_match:
             meta["title"] = title_match.group(1)
 
@@ -358,9 +344,7 @@ class GitHubCodeExtractor:
         input_pattern = r"input(?:\.\w+)?\s*\((.*?)\)"
         for match in re.finditer(input_pattern, code, re.DOTALL):
             arguments = match.group(1)
-            title_match = re.search(
-                r'title\s*=\s*["\']([^"\']+)["\']', arguments, re.IGNORECASE
-            )
+            title_match = re.search(r'title\s*=\s*["\']([^"\']+)["\']', arguments, re.IGNORECASE)
             if title_match:
                 param_name = title_match.group(1)
             else:
@@ -375,9 +359,7 @@ class GitHubCodeExtractor:
         loops = len(re.findall(r"\b(for|while)\b", code))
         functions = len(re.findall(r"\b(f_\w+|func_\w+)\s*\(", code))
 
-        meta["complexity_score"] = min(
-            1.0, (conditionals * 0.02 + loops * 0.03 + functions * 0.05)
-        )
+        meta["complexity_score"] = min(1.0, (conditionals * 0.02 + loops * 0.03 + functions * 0.05))
 
         return meta
 

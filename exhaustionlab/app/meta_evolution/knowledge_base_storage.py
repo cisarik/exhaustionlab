@@ -6,10 +6,10 @@ Uses JSON files for simplicity and portability.
 """
 
 import json
-from pathlib import Path
-from typing import List, Dict, Optional, Any
-from datetime import datetime
 import logging
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -57,9 +57,7 @@ class KnowledgeBaseStorage:
 
         # Create index if doesn't exist
         if not self.index_path.exists():
-            self._save_index(
-                {"strategies": [], "last_updated": datetime.now().isoformat()}
-            )
+            self._save_index({"strategies": [], "last_updated": datetime.now().isoformat()})
 
     def save_strategy(self, strategy: Dict[str, Any]) -> str:
         """

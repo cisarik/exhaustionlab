@@ -14,10 +14,10 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass, asdict, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
-from enum import Enum
+from typing import Any, Dict, List, Optional, Tuple
+
 import pandas as pd
 
 try:
@@ -234,9 +234,7 @@ class ConfigurationManager:
 
     def __init__(self, config_dir: Optional[Path] = None):
         """Initialize manager."""
-        self.config_dir = (
-            config_dir or Path.home() / "ExhaustionLab" / ".cache" / "configs"
-        )
+        self.config_dir = config_dir or Path.home() / "ExhaustionLab" / ".cache" / "configs"
         self.config_dir.mkdir(parents=True, exist_ok=True)
 
         self.configurations: Dict[str, StrategyConfig] = {}
@@ -427,31 +425,31 @@ if __name__ == "__main__":
             print(f"  ❌ {error}")
 
     # Save
-    print(f"\n💾 Saving configuration...")
+    print("\n💾 Saving configuration...")
     manager.save_config(momentum_config, "test_momentum")
 
     # Load
-    print(f"\n📂 Loading configuration...")
+    print("\n📂 Loading configuration...")
     loaded = manager.load_config("test_momentum")
     print(f"  Loaded: {loaded.strategy_name}")
 
     # Show config
-    print(f"\n📊 Configuration Details:")
+    print("\n📊 Configuration Details:")
     config_dict = loaded.to_dict()
-    print(f"  Evolution:")
+    print("  Evolution:")
     for key, value in config_dict["evolution"].items():
         print(f"    {key}: {value}")
 
-    print(f"  Risk Management:")
+    print("  Risk Management:")
     for key, value in config_dict["risk"].items():
         print(f"    {key}: {value}")
 
-    print(f"  Performance Targets:")
+    print("  Performance Targets:")
     for key, value in config_dict["targets"].items():
         print(f"    {key}: {value}")
 
     # List all
-    print(f"\n📚 Available Configurations:")
+    print("\n📚 Available Configurations:")
     for config_name in manager.list_configs():
         print(f"  - {config_name}")
 

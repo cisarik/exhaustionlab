@@ -18,8 +18,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 from ..app.backtest.multi_market_evaluator import MultiMarketEvaluator
-from ..app.backtest.strategy_registry import StrategyRegistry, StrategyMetrics
-
+from ..app.backtest.strategy_registry import StrategyMetrics, StrategyRegistry
 
 LOGGER = logging.getLogger(__name__)
 
@@ -174,11 +173,7 @@ class LLMDebugLogStore:
         if not candidate.exists():
             # allow bare timestamp lookups even if directory contains prefix
             fallback = next(
-                (
-                    p
-                    for p in self.root.iterdir()
-                    if p.is_dir() and p.name.endswith(session_id)
-                ),
+                (p for p in self.root.iterdir() if p.is_dir() and p.name.endswith(session_id)),
                 None,
             )
             candidate = fallback or candidate
@@ -196,9 +191,7 @@ class LLMDebugLogStore:
             return None
 
         prompt_text = prompt_file.read_text().strip()
-        response_text = (
-            response_file.read_text().strip() if response_file.exists() else ""
-        )
+        response_text = response_file.read_text().strip() if response_file.exists() else ""
         metadata: Dict[str, Any] = {}
         if request_file.exists():
             try:
@@ -368,9 +361,7 @@ class StrategyDashboardService:
         )
 
     def _map_strategy_record(self, record: Dict[str, Any]) -> StrategySummary:
-        recent_metrics = [
-            self._map_metric_row(row) for row in record.get("recent_metrics", [])
-        ]
+        recent_metrics = [self._map_metric_row(row) for row in record.get("recent_metrics", [])]
         return StrategySummary(
             strategy_id=record["strategy_id"],
             name=record["name"],

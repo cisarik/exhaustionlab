@@ -10,24 +10,15 @@ Stores complete strategy profiles including:
 - Parameters and configuration
 """
 
-from sqlalchemy import (
-    create_engine,
-    Column,
-    Integer,
-    String,
-    Float,
-    Text,
-    DateTime,
-    Boolean,
-    JSON,
-)
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
-from datetime import datetime
-from typing import List, Optional, Dict, Any
-from pathlib import Path
-import logging
 import json
+import logging
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from sqlalchemy import JSON, Boolean, Column, DateTime, Float, Integer, String, Text, create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Session, sessionmaker
 
 logger = logging.getLogger(__name__)
 
@@ -54,9 +45,7 @@ class Strategy(Base):
     name = Column(String(255), nullable=False, index=True)
     title = Column(String(255))
     author = Column(String(255), index=True)
-    platform = Column(
-        String(50), nullable=False, index=True
-    )  # github, reddit, tradingview
+    platform = Column(String(50), nullable=False, index=True)  # github, reddit, tradingview
 
     # Source information
     url = Column(String(500), unique=True)
@@ -113,9 +102,7 @@ class Strategy(Base):
     # Dates
     created_at = Column(DateTime)  # When strategy was created (on platform)
     updated_at = Column(DateTime)  # Last update on platform
-    extracted_at = Column(
-        DateTime, default=datetime.now, index=True
-    )  # When we extracted it
+    extracted_at = Column(DateTime, default=datetime.now, index=True)  # When we extracted it
 
     # Tags & Categories
     tags = Column(JSON)  # ["momentum", "trend_following", "crypto"]
@@ -147,9 +134,7 @@ class Strategy(Base):
             "forks": self.forks,
             "indicators_used": self.indicators_used,
             "category": self.category,
-            "extracted_at": (
-                self.extracted_at.isoformat() if self.extracted_at else None
-            ),
+            "extracted_at": (self.extracted_at.isoformat() if self.extracted_at else None),
         }
 
 
@@ -202,12 +187,8 @@ class StrategyDatabase:
 
         try:
             # Serialize lists to JSON strings for SQLite compatibility
-            if "extraction_notes" in strategy_data and isinstance(
-                strategy_data["extraction_notes"], list
-            ):
-                strategy_data["extraction_notes"] = json.dumps(
-                    strategy_data["extraction_notes"]
-                )
+            if "extraction_notes" in strategy_data and isinstance(strategy_data["extraction_notes"], list):
+                strategy_data["extraction_notes"] = json.dumps(strategy_data["extraction_notes"])
 
             # Check if exists
             strategy_id = strategy_data.get("id")
@@ -349,9 +330,7 @@ class StrategyDatabase:
                     "by_category": {},
                 }
 
-            with_code = (
-                session.query(Strategy).filter(Strategy.has_code == True).count()
-            )
+            with_code = session.query(Strategy).filter(Strategy.has_code.is_(True)).count()
 
             # Average quality
             from sqlalchemy import func
@@ -361,19 +340,10 @@ class StrategyDatabase:
             # By platform
             from sqlalchemy import func
 
-            by_platform = dict(
-                session.query(Strategy.platform, func.count(Strategy.id))
-                .group_by(Strategy.platform)
-                .all()
-            )
+            by_platform = dict(session.query(Strategy.platform, func.count(Strategy.id)).group_by(Strategy.platform).all())
 
             # By category
-            by_category = dict(
-                session.query(Strategy.category, func.count(Strategy.id))
-                .filter(Strategy.category != None)
-                .group_by(Strategy.category)
-                .all()
-            )
+            by_category = dict(session.query(Strategy.category, func.count(Strategy.id)).filter(Strategy.category.isnot(None)).group_by(Strategy.category).all())
 
             return {
                 "total": total,

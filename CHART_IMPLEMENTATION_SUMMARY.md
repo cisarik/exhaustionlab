@@ -57,8 +57,8 @@ Successfully implemented a **complete candlestick chart visualization system** f
 
 ### Chart Rendering Architecture
 ```
-Request → Cache Check → Fetch Data → Calculate Signals 
-   → Draw Candles → Draw Signals → Draw Volume 
+Request → Cache Check → Fetch Data → Calculate Signals
+   → Draw Candles → Draw Signals → Draw Volume
    → Export PNG → Cache → Response
 ```
 

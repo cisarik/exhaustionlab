@@ -29,17 +29,12 @@ def make_trend_df(rows: int = 80) -> pd.DataFrame:
 
 def test_ga_optimizer_produces_stable_result():
     df = make_trend_df()
-    settings = GASettings(
-        population=8, generations=4, mutation_rate=0.3, crossover_rate=0.7, elite=1
-    )
+    settings = GASettings(population=8, generations=4, mutation_rate=0.3, crossover_rate=0.7, elite=1)
     optimizer = GeneticSqueezeOptimizer(df, settings, rng=Random(42))
     params, fitness = optimizer.run()
 
     assert isinstance(params, dict)
     assert isinstance(fitness, float)
-    assert all(
-        key in params
-        for key in ("length_bb", "mult_bb", "length_kc", "mult_kc", "use_true_range")
-    )
+    assert all(key in params for key in ("length_bb", "mult_bb", "length_kc", "mult_kc", "use_true_range"))
     # Fitness should be finite and not NaN
     assert abs(fitness) > 0.0 or fitness == 0.0

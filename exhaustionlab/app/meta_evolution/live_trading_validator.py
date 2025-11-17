@@ -1,23 +1,23 @@
 """
 Live Trading Readiness Validator
 
-Comprehensive validation system to determine if strategies are 
+Comprehensive validation system to determine if strategies are
 truly ready for real-time deployment and profitable execution.
 """
 
 from __future__ import annotations
 
 import json
-import numpy as np
-import pandas as pd
-from dataclasses import dataclass, field, asdict
-from typing import Dict, List, Optional, Tuple, Any
-from datetime import datetime, timedelta
-from pathlib import Path
 import logging
+from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-from .meta_config import MetaStrategyType, MarketFocus, EvolutionIntensity
-from ..llm.validators import PyneCoreValidator, ValidationResult
+import pandas as pd
+
+from ..llm.validators import PyneCoreValidator, ValidationIssue, ValidationResult
+from .meta_config import MarketFocus, MetaStrategyType
 
 
 @dataclass
@@ -255,12 +255,8 @@ class TradingEnvironment:
     trading_hours: str = "24/7"  # Crypto is 24/7
 
     # Market conditions to test
-    volatility_regimes: List[str] = field(
-        default_factory=lambda: ["low", "medium", "high"]
-    )
-    market_conditions: List[str] = field(
-        default_factory=lambda: ["trending", "sideways", "volatile"]
-    )
+    volatility_regimes: List[str] = field(default_factory=lambda: ["low", "medium", "high"])
+    market_conditions: List[str] = field(default_factory=lambda: ["trending", "sideways", "volatile"])
 
     # Execution constraints
     max_slippage_tolerance: float = 0.01  # 1%
@@ -331,15 +327,11 @@ class LiveTradingValidator:
             return validation_results
 
         # 2. Backtest Analysis
-        backtest_metrics = self._analyze_backtest_performance(
-            backtest_data, strategy_type, market_focus
-        )
+        backtest_metrics = self._analyze_backtest_performance(backtest_data, strategy_type, market_focus)
         validation_results["metrics"].update(backtest_metrics)
 
         # 3. Execution Analysis
-        execution_analysis = self._analyze_execution_constraints(
-            strategy_code, backtest_data
-        )
+        execution_analysis = self._analyze_execution_constraints(strategy_code, backtest_data)
         validation_results["metrics"].update(execution_analysis)
 
         # 4. Quality Scores
@@ -348,9 +340,7 @@ class LiveTradingValidator:
 
         # 5. Overall Assessment
         overall_score = validation_results["metrics"].live_trading_score
-        validation_results["is_live_trading_ready"] = (
-            overall_score >= self.thresholds["min_live_trading_score"]
-        )
+        validation_results["is_live_trading_ready"] = overall_score >= self.thresholds["min_live_trading_score"]
 
         # Generate issues and recommendations
         self._generate_validation_issues(validation_results, overall_score)
@@ -361,9 +351,7 @@ class LiveTradingValidator:
         """Validate PyneCore code quality."""
 
         # Basic syntax validation
-        validation = self.pyne_validator.validate_pyne_code(
-            strategy_code, check_runtime=True
-        )
+        validation = self.pyne_validator.validate_pyne_code(strategy_code, check_runtime=True)
 
         if not validation.is_valid:
             return validation
@@ -373,12 +361,20 @@ class LiveTradingValidator:
         code_lines = strategy_code.split("\n")
 
         # Check for production-ready patterns
-        has_error_handling = any(
-            "try:" in line or "except" in line for line in code_lines
-        )
+        has_error_handling = any("try:" in line or "except" in line for line in code_lines)
         has_constant_inputs = any("input." in line for line in code_lines)
         has_plots = any("plot(" in line or "plotshape" in line for line in code_lines)
         has_proper_structure = any("@script." in line for line in code_lines)
+
+        if not has_error_handling:
+            issues.append(
+                ValidationIssue(
+                    "warning",
+                    None,
+                    "No error handling detected",
+                    "Wrap network or indicator logic with try/except blocks",
+                )
+            )
 
         if not has_constant_inputs:
             issues.append(
@@ -421,11 +417,7 @@ class LiveTradingValidator:
             )
 
         if len(code_lines) < 20:
-            issues.append(
-                ValidationIssue(
-                    "error", None, "Code too simple", "Add comprehensive signal logic"
-                )
-            )
+            issues.append(ValidationIssue("error", None, "Code too simple", "Add comprehensive signal logic"))
 
         validation.issues.extend(issues)
         validation.is_valid = len([i for i in issues if i.severity == "error"]) == 0
@@ -494,11 +486,7 @@ class LiveTradingValidator:
                 win_return = wins.mean() if len(wins) > 0 else 0
                 loss_return = losses.mean() if len(losses) > 0 else 0
 
-                profit_factor = (
-                    wins.sum() / abs(losses.sum())
-                    if losses.sum() != 0
-                    else float("inf")
-                )
+                profit_factor = wins.sum() / abs(losses.sum()) if losses.sum() != 0 else float("inf")
                 avg_win = win_return
                 avg_loss = abs(loss_return)
             else:
@@ -521,11 +509,7 @@ class LiveTradingValidator:
             avg_loss = 0
 
         # Advanced metrics
-        monthly_returns = (
-            returns.resample(f"{max(30, len(returns)//12)}h").sum()
-            if len(returns) > 30
-            else [returns.sum()]
-        )
+        monthly_returns = returns.resample(f"{max(30, len(returns)//12)}h").sum() if len(returns) > 30 else [returns.sum()]
         monthly_volatility = monthly_returns.std() if len(monthly_returns) > 1 else 0
 
         avg_trade_return = trades.mean() if total_trades > 0 else 0
@@ -546,9 +530,7 @@ class LiveTradingValidator:
             "monthly_volatility": monthly_volatility,
         }
 
-    def _analyze_execution_constraints(
-        self, strategy_code: str, backtest_data: pd.DataFrame
-    ) -> Dict:
+    def _analyze_execution_constraints(self, strategy_code: str, backtest_data: pd.DataFrame) -> Dict:
         """Analyze execution constraints and market impact."""
 
         # Estimate execution metrics based on strategy characteristics
@@ -557,9 +539,7 @@ class LiveTradingValidator:
         # Signal frequency estimation
         if "close[" in code_lower:
             # Count historical data references
-            lookback_patterns = code_lower.count("[") - code_lower.count(
-                "close[1"
-            )  # Rough estimation
+            lookback_patterns = code_lower.count("[") - code_lower.count("close[1")  # Rough estimation
             avg_signal_frequency = 1.0 / (1 + lookback_patterns)  # Assuming 1m data
         else:
             avg_signal_frequency = 0.01  # Low frequency indicator
@@ -601,14 +581,12 @@ class LiveTradingValidator:
             "signal_frequency": avg_signal_frequency,
         }
 
-    def _calculate_quality_scores(
-        self, strategy_code: str, backtest_data: pd.DataFrame
-    ) -> Dict:
+    def _calculate_quality_scores(self, strategy_code: str, backtest_data: pd.DataFrame) -> Dict:
         """Calculate comprehensive quality scores."""
 
         # Code complexity score
         code_lines = len(strategy_code.split("\n"))
-        complexity_factors = []
+        complexity_factors: List[int] = []
 
         if "import" in strategy_code.lower():
             complexity_factors.append(5)
@@ -616,7 +594,7 @@ class LiveTradingValidator:
             complexity_factors.append(10)
         if "try:" in strategy_code.lower():
             complexity_factors.append(3)
-        if len(strategy_code.split("\n")) > 100:
+        if code_lines > 100:
             complexity_factors.append(8)
 
         code_complexity_score = min(1.0, sum(complexity_factors) / 50.0)
@@ -670,72 +648,44 @@ class LiveTradingValidator:
             "robustness_score": consistency_score,
         }
 
-    def _generate_validation_issues(
-        self, validation_results: Dict, overall_score: float
-    ):
+    def _generate_validation_issues(self, validation_results: Dict, overall_score: float):
         """Generate specific issues and recommendations."""
 
         metrics = validation_results["metrics"]
 
         # Generate issues for failed criteria
         for criterion, threshold in self.thresholds.items():
-            criterion_val = getattr(metrics, criterion, 0)
+            criterion_value = getattr(metrics, criterion, 0)
 
-            if criterion == "min_sharpe" and metrics.sharpe_ratio < threshold:
-                validation_results["issues"].append(
-                    f"Sharpe ratio {metrics.sharpe_ratio:.2f} below threshold {threshold}"
-                )
-                validation_results["recommendations"].append(
-                    "Improve signal quality through better filtering or risk management"
-                )
+            if criterion == "min_sharpe" and criterion_value < threshold:
+                validation_results["issues"].append(f"Sharpe ratio {metrics.sharpe_ratio:.2f} below threshold {threshold}")
+                validation_results["recommendations"].append("Improve signal quality through better filtering or risk management")
 
-            elif criterion == "max_max_drawdown" and metrics.max_drawdown > threshold:
-                validation_results["issues"].append(
-                    f"Maximum drawdown {metrics.max_drawdown:.1%} exceeds threshold {threshold:.1%}"
-                )
-                validation_results["recommendations"].append(
-                    "Enhance stop-loss logic and position sizing to reduce drawdown"
-                )
+            elif criterion == "max_max_drawdown" and criterion_value > threshold:
+                validation_results["issues"].append(f"Maximum drawdown {metrics.max_drawdown:.1%} exceeds threshold {threshold:.1%}")
+                validation_results["recommendations"].append("Enhance stop-loss logic and position sizing to reduce drawdown")
 
-            elif criterion == "min_win_rate" and metrics.win_rate < threshold:
-                validation_results["issues"].append(
-                    f"Win rate {metrics.win_rate:.1%} below threshold {threshold:.1%}"
-                )
-                validation_results["recommendations"].append(
-                    "Add signal confirmation and filter to improve win rate"
-                )
+            elif criterion == "min_win_rate" and criterion_value < threshold:
+                validation_results["issues"].append(f"Win rate {metrics.win_rate:.1%} below threshold {threshold:.1%}")
+                validation_results["recommendations"].append("Add signal confirmation and filter to improve win rate")
 
-            elif criterion == "max_avg_slippage" and metrics.avg_slippage > threshold:
-                validation_results["issues"].append(
-                    f"Average slippage {metrics.avg_slippage:.2%} exceeds threshold {threshold:.2%}"
-                )
-                validation_results["recommendations"].append(
-                    "Reduce trade frequency or implement slippage mitigation"
-                )
+            elif criterion == "max_avg_slippage" and criterion_value > threshold:
+                validation_results["issues"].append(f"Average slippage {metrics.avg_slippage:.2%} exceeds threshold {threshold:.2%}")
+                validation_results["recommendations"].append("Reduce trade frequency or implement slippage mitigation")
 
         # Generate warnings
         if overall_score < 50:
-            validation_results["warnings"].append(
-                "Strategy shows significant weaknesses for live trading"
-            )
+            validation_results["warnings"].append("Strategy shows significant weaknesses for live trading")
         elif overall_score < 70:
-            validation_results["warnings"].append(
-                "Strategy has moderate issues that should be addressed"
-            )
+            validation_results["warnings"].append("Strategy has moderate issues that should be addressed")
         elif overall_score < 85:
-            validation_results["warnings"].append(
-                "Strategy is good but could be optimized further"
-            )
+            validation_results["warnings"].append("Strategy is good but could be optimized further")
 
         # Add overall recommendation
         if overall_score >= 70:
-            validation_results["recommendations"].append(
-                "Strategy passes live trading requirements - consider small-scale deployment"
-            )
+            validation_results["recommendations"].append("Strategy passes live trading requirements - consider small-scale deployment")
         else:
-            validation_results["recommendations"].append(
-                "Strategy requires significant improvements before live deployment"
-            )
+            validation_results["recommendations"].append("Strategy requires significant improvements before live deployment")
 
     def generate_validation_report(self, validation_results: Dict) -> str:
         """Generate comprehensive validation report."""

@@ -4,11 +4,11 @@ Settings Service - Manages application configuration and user preferences.
 
 import json
 import logging
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
 from cryptography.fernet import Fernet
-import os
 
 logger = logging.getLogger(__name__)
 
@@ -137,9 +137,7 @@ class SettingsService:
         settings_file: Optional[Path] = None,
         encryption_key: Optional[bytes] = None,
     ):
-        self.settings_file = (
-            settings_file or Path.home() / ".exhaustionlab" / "settings.json"
-        )
+        self.settings_file = settings_file or Path.home() / ".exhaustionlab" / "settings.json"
         self.settings_file.parent.mkdir(parents=True, exist_ok=True)
 
         # Encryption for sensitive data
@@ -185,18 +183,10 @@ class SettingsService:
                 settings = AppSettings.from_dict(data)
 
                 # Decrypt sensitive fields
-                if (
-                    settings.exchange.api_key
-                    and settings.exchange.api_key != "***MASKED***"
-                ):
+                if settings.exchange.api_key and settings.exchange.api_key != "***MASKED***":
                     settings.exchange.api_key = self._decrypt(settings.exchange.api_key)
-                if (
-                    settings.exchange.api_secret
-                    and settings.exchange.api_secret != "***MASKED***"
-                ):
-                    settings.exchange.api_secret = self._decrypt(
-                        settings.exchange.api_secret
-                    )
+                if settings.exchange.api_secret and settings.exchange.api_secret != "***MASKED***":
+                    settings.exchange.api_secret = self._decrypt(settings.exchange.api_secret)
                 if settings.llm.api_key and settings.llm.api_key != "***MASKED***":
                     settings.llm.api_key = self._decrypt(settings.llm.api_key)
 
@@ -227,9 +217,7 @@ class SettingsService:
             if data["exchange"]["api_key"]:
                 data["exchange"]["api_key"] = self._encrypt(data["exchange"]["api_key"])
             if data["exchange"]["api_secret"]:
-                data["exchange"]["api_secret"] = self._encrypt(
-                    data["exchange"]["api_secret"]
-                )
+                data["exchange"]["api_secret"] = self._encrypt(data["exchange"]["api_secret"])
             if data["llm"]["api_key"]:
                 data["llm"]["api_key"] = self._encrypt(data["llm"]["api_key"])
 

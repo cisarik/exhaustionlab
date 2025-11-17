@@ -12,13 +12,13 @@ Estimates realistic slippage based on:
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
-from datetime import datetime, time
+from typing import Dict, Optional
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -177,29 +177,19 @@ class SlippageEstimator:
         time_of_day = self._classify_time_of_day(timestamp)
 
         # 1. Spread cost
-        spread_cost = self._calculate_spread_cost(
-            liquidity_class, signal_frequency, time_of_day
-        )
+        spread_cost = self._calculate_spread_cost(liquidity_class, signal_frequency, time_of_day)
 
         # 2. Market impact
-        market_impact = self._calculate_market_impact(
-            order_size_usd, liquidity_metrics, liquidity_class
-        )
+        market_impact = self._calculate_market_impact(order_size_usd, liquidity_metrics, liquidity_class)
 
         # 3. Execution delay cost
-        execution_delay = self._calculate_execution_delay_cost(
-            signal_frequency, volatility
-        )
+        execution_delay = self._calculate_execution_delay_cost(signal_frequency, volatility)
 
         # 4. Volatility slippage
-        volatility_slippage = self._calculate_volatility_slippage(
-            volatility, signal_frequency, liquidity_class
-        )
+        volatility_slippage = self._calculate_volatility_slippage(volatility, signal_frequency, liquidity_class)
 
         # Total slippage
-        total_slippage = (
-            spread_cost + market_impact + execution_delay + volatility_slippage
-        )
+        total_slippage = spread_cost + market_impact + execution_delay + volatility_slippage
 
         # Confidence interval (±30% for realistic range)
         ci_lower = total_slippage * 0.7
@@ -245,9 +235,7 @@ class SlippageEstimator:
 
         # Calculate signal frequency
         if "timestamp" in trades_df.columns:
-            time_range = (
-                trades_df["timestamp"].max() - trades_df["timestamp"].min()
-            ).total_seconds() / 86400
+            time_range = (trades_df["timestamp"].max() - trades_df["timestamp"].min()).total_seconds() / 86400
             signal_frequency = len(trades_df) / max(time_range, 1)
         else:
             signal_frequency = len(trades_df) / 30  # Assume 30 days
@@ -286,10 +274,7 @@ class SlippageEstimator:
         avg_slippage_bps = np.mean([e.total_slippage_bps for e in slippage_estimates])
 
         # Total cost in USD
-        total_slippage_cost_usd = sum(
-            avg_order_size_usd * (e.total_slippage_bps / 10000)
-            for e in slippage_estimates
-        )
+        total_slippage_cost_usd = sum(avg_order_size_usd * (e.total_slippage_bps / 10000) for e in slippage_estimates)
 
         # Annual drag (slippage per trade × trades per year)
         trades_per_year = signal_frequency * 365
@@ -306,15 +291,9 @@ class SlippageEstimator:
             "trades_per_year": trades_per_year,
             "slippage_breakdown": {
                 "spread": np.mean([e.spread_cost_bps for e in slippage_estimates]),
-                "market_impact": np.mean(
-                    [e.market_impact_bps for e in slippage_estimates]
-                ),
-                "execution_delay": np.mean(
-                    [e.execution_delay_bps for e in slippage_estimates]
-                ),
-                "volatility": np.mean(
-                    [e.volatility_slippage_bps for e in slippage_estimates]
-                ),
+                "market_impact": np.mean([e.market_impact_bps for e in slippage_estimates]),
+                "execution_delay": np.mean([e.execution_delay_bps for e in slippage_estimates]),
+                "volatility": np.mean([e.volatility_slippage_bps for e in slippage_estimates]),
             },
         }
 
@@ -555,17 +534,11 @@ def calculate_trading_costs(
     estimator = SlippageEstimator()
 
     # Estimate slippage
-    slippage_results = estimator.estimate_portfolio_slippage(
-        trades_df, symbol, portfolio_size_usd
-    )
+    slippage_results = estimator.estimate_portfolio_slippage(trades_df, symbol, portfolio_size_usd)
 
     # Calculate fees
     if include_fees:
-        total_fees_usd = (
-            slippage_results["avg_order_size_usd"]
-            * (fee_bps / 10000)
-            * slippage_results["total_trades"]
-        )
+        total_fees_usd = slippage_results["avg_order_size_usd"] * (fee_bps / 10000) * slippage_results["total_trades"]
         annual_fee_drag_bps = fee_bps * slippage_results["trades_per_year"]
         annual_fee_drag_pct = annual_fee_drag_bps / 10000
     else:
@@ -575,9 +548,7 @@ def calculate_trading_costs(
 
     # Total costs
     total_costs_usd = slippage_results["total_slippage_cost_usd"] + total_fees_usd
-    total_annual_drag_pct = (
-        slippage_results["slippage_drag_annual_pct"] + annual_fee_drag_pct
-    )
+    total_annual_drag_pct = slippage_results["slippage_drag_annual_pct"] + annual_fee_drag_pct
 
     return {
         "slippage": slippage_results,
@@ -592,13 +563,7 @@ def calculate_trading_costs(
             "cost_as_pct_of_portfolio": (total_costs_usd / portfolio_size_usd) * 100,
         },
         "cost_breakdown_pct": {
-            "slippage": (
-                (slippage_results["total_slippage_cost_usd"] / total_costs_usd) * 100
-                if total_costs_usd > 0
-                else 0
-            ),
-            "fees": (
-                (total_fees_usd / total_costs_usd) * 100 if total_costs_usd > 0 else 0
-            ),
+            "slippage": ((slippage_results["total_slippage_cost_usd"] / total_costs_usd) * 100 if total_costs_usd > 0 else 0),
+            "fees": ((total_fees_usd / total_costs_usd) * 100 if total_costs_usd > 0 else 0),
         },
     }

@@ -1,6 +1,6 @@
 /**
  * Evolution Control & Real-time Updates
- * 
+ *
  * Handles:
  * - Starting/stopping evolution
  * - Server-Sent Events for real-time progress
@@ -71,7 +71,7 @@ async function startEvolution() {
   } catch (err) {
     console.error("Evolution start error:", err);
     addFeedMessage(`Error starting evolution: ${err.message}`, "error");
-    
+
     const startBtn = document.getElementById("start-evolution");
     if (startBtn) {
       startBtn.disabled = false;
@@ -461,7 +461,7 @@ function onStrategySelected() {
   if (typeof loadChart === "function") {
     loadChart().catch(console.error);
   }
-  
+
   console.log("Selected strategy:", strategyId);
 }
 
@@ -487,7 +487,7 @@ async function viewStrategyCode(strategyId) {
 function showCodeModal(name, code, language) {
   // Check if modal exists, create if not
   let modal = document.getElementById("code-modal");
-  
+
   if (!modal) {
     modal = document.createElement("div");
     modal.id = "code-modal";
@@ -551,7 +551,7 @@ function selectStrategyInChart(strategyId) {
     selector.value = strategyId;
     // Trigger change event
     selector.dispatchEvent(new Event("change"));
-    
+
     // Scroll to chart
     const chartPanel = document.getElementById("chart-panel");
     if (chartPanel) {

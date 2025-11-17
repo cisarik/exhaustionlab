@@ -1,12 +1,14 @@
-import requests, time, pandas as pd
+import time
+
+import pandas as pd
+import requests
+
 from ...utils.timeframes import to_binance_interval
 
 BINANCE_API = "https://api.binance.com/api/v3/klines"
 
 
-def fetch_klines_csv_like(
-    symbol: str = "ADAEUR", interval: str = "1m", limit: int = 500
-) -> pd.DataFrame:
+def fetch_klines_csv_like(symbol: str = "ADAEUR", interval: str = "1m", limit: int = 500) -> pd.DataFrame:
     params = dict(
         symbol=symbol.upper(),
         interval=to_binance_interval(interval),
@@ -47,7 +49,8 @@ def fetch_klines_csv_like(
 
 
 if __name__ == "__main__":
-    import argparse, sys
+    import argparse
+    import sys
 
     p = argparse.ArgumentParser()
     p.add_argument("--symbol", default="ADAEUR")

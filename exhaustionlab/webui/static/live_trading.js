@@ -13,7 +13,7 @@ function deployStrategy(strategyId, strategyName) {
   const modal = document.getElementById("deploy-modal");
   const titleElement = document.getElementById("deploy-modal-title");
   const strategyIdInput = document.getElementById("deploy-strategy-id");
-  
+
   if (modal && titleElement && strategyIdInput) {
     titleElement.textContent = `Deploy: ${strategyName}`;
     strategyIdInput.value = strategyId;
@@ -37,19 +37,19 @@ function closeDeployModal() {
 async function confirmDeploy() {
   const strategyId = document.getElementById("deploy-strategy-id")?.value;
   const strategyName = document.getElementById("deploy-modal-title")?.textContent.replace("Deploy: ", "");
-  
+
   // Get form values
   const mode = document.querySelector('input[name="mode"]:checked')?.value || "paper";
   const symbols = document.getElementById("deploy-symbols")?.value.split(",").map(s => s.trim()) || ["ADAEUR"];
   const timeframe = document.getElementById("deploy-timeframe")?.value || "1m";
-  
+
   const maxPositionSize = parseFloat(document.getElementById("deploy-position-size")?.value || 2) / 100;
   const maxDailyLoss = parseFloat(document.getElementById("deploy-daily-loss")?.value || 1) / 100;
   const maxDrawdown = parseFloat(document.getElementById("deploy-drawdown")?.value || 5) / 100;
   const maxOpenPositions = parseInt(document.getElementById("deploy-max-positions")?.value || 3);
   const enableStopLoss = document.getElementById("deploy-stop-loss")?.checked ?? true;
   const enableTakeProfit = document.getElementById("deploy-take-profit")?.checked ?? true;
-  
+
   // Build request
   const request = {
     strategy_id: strategyId,
@@ -68,37 +68,37 @@ async function confirmDeploy() {
     exchange: "binance",
     testnet: true,
   };
-  
+
   try {
     const response = await fetch("/api/trading/deploy", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
     });
-    
+
     if (!response.ok) {
       throw new Error(`Deployment failed: ${response.statusText}`);
     }
-    
+
     const result = await response.json();
-    
+
     // Show success message
     showNotification(`✅ Strategy deployed successfully in ${mode} mode!`, "success");
-    
+
     // Close modal
     closeDeployModal();
-    
+
     // Refresh deployments
     await refreshDeployments();
-    
+
     // Update deployment status badge
     updateDeploymentStatus(strategyId, result.deployment_id, mode);
-    
+
     // Start auto-refresh if not already running
     if (!updateInterval) {
       updateInterval = setInterval(refreshTradingData, 2000); // Update every 2 seconds
     }
-    
+
   } catch (error) {
     console.error("Deployment error:", error);
     showNotification(`❌ Deployment failed: ${error.message}`, "error");
@@ -110,7 +110,7 @@ async function confirmDeploy() {
  */
 function updateDeploymentStatus(strategyId, deploymentId, mode) {
   activeDeployments[strategyId] = { deploymentId, mode };
-  
+
   // Check if this strategy is currently selected
   const selector = document.getElementById("strategy-selector");
   if (selector && selector.value === strategyId) {
@@ -126,7 +126,7 @@ function showDeploymentBadge(mode) {
   if (badge) {
     badge.className = `deployment-badge ${mode}`;
     badge.style.display = "flex";
-    
+
     const statusText = badge.querySelector(".status-text");
     if (statusText) {
       statusText.textContent = mode === "paper" ? "PAPER TRADING" : "LIVE TRADING";
@@ -151,9 +151,9 @@ async function refreshDeployments() {
   try {
     const response = await fetch("/api/trading/deployments");
     if (!response.ok) return;
-    
+
     const deployments = await response.json();
-    
+
     // Update active deployments map
     activeDeployments = {};
     deployments.forEach(d => {
@@ -162,19 +162,19 @@ async function refreshDeployments() {
         mode: d.mode,
       };
     });
-    
+
     // Render deployments grid
     renderDeployments(deployments);
-    
+
     // Show/hide emergency stop button
     const emergencyBtn = document.getElementById("emergency-stop-btn");
     if (emergencyBtn) {
       emergencyBtn.style.display = deployments.length > 0 ? "block" : "none";
     }
-    
+
     // Update all positions
     await refreshAllPositions(deployments);
-    
+
   } catch (error) {
     console.error("Failed to refresh deployments:", error);
   }
@@ -186,12 +186,12 @@ async function refreshDeployments() {
 function renderDeployments(deployments) {
   const grid = document.getElementById("deployments-grid");
   if (!grid) return;
-  
+
   if (deployments.length === 0) {
     grid.innerHTML = '<div class="placeholder">No active deployments. Deploy a strategy from Hall of Fame to start trading.</div>';
     return;
   }
-  
+
   grid.innerHTML = deployments.map(d => `
     <div class="deployment-card" data-deployment-id="${d.deployment_id}">
       <div class="deployment-header">
@@ -248,7 +248,7 @@ function renderDeployments(deployments) {
  */
 async function refreshAllPositions(deployments) {
   const allPositions = [];
-  
+
   for (const deployment of deployments) {
     try {
       const response = await fetch(`/api/trading/positions/${deployment.deployment_id}`);
@@ -260,7 +260,7 @@ async function refreshAllPositions(deployments) {
       console.error(`Failed to fetch positions for ${deployment.deployment_id}:`, error);
     }
   }
-  
+
   renderPositions(allPositions);
 }
 
@@ -270,12 +270,12 @@ async function refreshAllPositions(deployments) {
 function renderPositions(positions) {
   const tbody = document.getElementById("positions-tbody");
   if (!tbody) return;
-  
+
   if (positions.length === 0) {
     tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No open positions</td></tr>';
     return;
   }
-  
+
   tbody.innerHTML = positions.map(p => `
     <tr>
       <td><strong>${p.symbol}</strong></td>
@@ -301,19 +301,19 @@ async function stopDeployment(deploymentId) {
   if (!confirm("Stop this deployment and close all positions?")) {
     return;
   }
-  
+
   try {
     const response = await fetch(`/api/trading/stop/${deploymentId}`, {
       method: "POST",
     });
-    
+
     if (!response.ok) {
       throw new Error("Failed to stop deployment");
     }
-    
+
     showNotification("✅ Deployment stopped successfully", "success");
     await refreshDeployments();
-    
+
   } catch (error) {
     console.error("Stop deployment error:", error);
     showNotification(`❌ Failed to stop: ${error.message}`, "error");
@@ -327,25 +327,25 @@ async function emergencyStopAll() {
   if (!confirm("🚨 EMERGENCY STOP - Close all positions immediately?")) {
     return;
   }
-  
+
   try {
     const response = await fetch("/api/trading/emergency-stop", {
       method: "POST",
     });
-    
+
     if (!response.ok) {
       throw new Error("Emergency stop failed");
     }
-    
+
     showNotification("🚨 Emergency stop executed - All positions closed", "warning");
     await refreshDeployments();
-    
+
     // Stop auto-refresh
     if (updateInterval) {
       clearInterval(updateInterval);
       updateInterval = null;
     }
-    
+
   } catch (error) {
     console.error("Emergency stop error:", error);
     showNotification(`❌ Emergency stop failed: ${error.message}`, "error");
@@ -391,10 +391,10 @@ document.addEventListener("DOMContentLoaded", () => {
   if (emergencyBtn) {
     emergencyBtn.addEventListener("click", emergencyStopAll);
   }
-  
+
   // Load initial deployments
   refreshDeployments();
-  
+
   // Close modal on click outside
   const deployModal = document.getElementById("deploy-modal");
   if (deployModal) {
@@ -404,7 +404,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
-  
+
   // Update deployment badge when strategy selector changes
   const strategySelector = document.getElementById("strategy-selector");
   if (strategySelector) {

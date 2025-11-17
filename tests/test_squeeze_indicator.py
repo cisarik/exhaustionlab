@@ -23,9 +23,7 @@ def build_dummy_df(rows: int = 60) -> pd.DataFrame:
 
 def test_compute_squeeze_momentum_shapes_and_states():
     df = build_dummy_df()
-    out = compute_squeeze_momentum(
-        df, length_bb=10, mult_bb=2.0, length_kc=10, mult_kc=1.5
-    )
+    out = compute_squeeze_momentum(df, length_bb=10, mult_bb=2.0, length_kc=10, mult_kc=1.5)
 
     assert len(out) == len(df)
     assert set(out.columns) == {

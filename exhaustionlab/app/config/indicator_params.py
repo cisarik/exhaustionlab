@@ -97,10 +97,7 @@ def save_squeeze_params(params: Dict[str, float | int | bool]) -> None:
 
 def squeeze_param_bounds() -> Dict[str, Tuple[float | int, float | int, float]]:
     """Metadata for GA / optimization search."""
-    return {
-        spec.name: (spec.min_value, spec.max_value, spec.step)
-        for spec in SQUEEZE_PARAM_SPECS
-    }
+    return {spec.name: (spec.min_value, spec.max_value, spec.step) for spec in SQUEEZE_PARAM_SPECS}
 
 
 __all__ = [

@@ -6,8 +6,8 @@ API features that don't exist in PyneCore.
 """
 
 import re
-from typing import List, Dict, Tuple
 from dataclasses import dataclass
+from typing import Dict, List, Tuple
 
 
 @dataclass
@@ -211,7 +211,7 @@ class HallucinationDetector:
 
         report = [
             f"\n{'='*80}",
-            f"🚨 HALLUCINATION DETECTION REPORT",
+            "🚨 HALLUCINATION DETECTION REPORT",
             f"{'='*80}",
             f"\nFound {len(issues)} issue(s):\n",
         ]
@@ -247,9 +247,7 @@ class HallucinationDetector:
             "warnings": sum(1 for i in issues if i.severity == "warning"),
             "plot_issues": sum(1 for i in issues if "plot" in i.pattern),
             "color_issues": sum(1 for i in issues if "color" in i.pattern),
-            "operator_issues": sum(
-                1 for i in issues if "and" in i.pattern or "or" in i.pattern
-            ),
+            "operator_issues": sum(1 for i in issues if "and" in i.pattern or "or" in i.pattern),
         }
 
 
@@ -284,15 +282,15 @@ from pynecore import Series, input, plot, color, script
 def main():
     rsi = close.rsi(14)
     sma = close.sma(20)
-    
+
     # This has hallucinations
     buy = rsi < 30 and close > sma  # Wrong operator
     sell = rsi > 70 and close < sma  # Wrong operator
-    
+
     # Invalid parameters
     plot(rsi, "RSI", color=color.purple, style=plot.Style.LINE, title="RSI")
     plot(buy, "Buy", color=color.green, linewidth=2)
-    
+
     return {"buy": buy, "sell": sell}
 """
 

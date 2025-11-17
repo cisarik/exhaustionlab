@@ -200,24 +200,24 @@ from exhaustionlab.app.validation import (
 
 async def validate_strategy_complete():
     """Complete validation pipeline with real data."""
-    
+
     # ========================================================================
     # STEP 1: Run PyneCore backtest (external)
     # ========================================================================
     # $ pyne backtest strategy.py --symbol BTCUSDT --timeframe 5m --days 30
     # Creates output directory with trades.json, equity.json, summary.json
-    
+
     backtest_output_dir = "/path/to/pynecore/output/"
-    
+
     # ========================================================================
     # STEP 2: Parse real backtest results
     # ========================================================================
     backtest = parse_backtest_from_directory(backtest_output_dir)
-    
+
     print(f"Parsed {backtest.total_trades} trades")
     print(f"Return: {backtest.total_return:.2%}")
     print(f"Sharpe: {backtest.sharpe_ratio:.2f}")
-    
+
     # ========================================================================
     # STEP 3: Multi-market testing
     # ========================================================================
@@ -227,12 +227,12 @@ async def validate_strategy_complete():
         timeframes=["5m", "15m", "1h"],
         lookback_days=30,
     )
-    
+
     multi_market_results = await tester.test_strategy(
         strategy_func=my_strategy,
         test_configs=test_configs,
     )
-    
+
     # ========================================================================
     # STEP 4: Walk-forward validation
     # ========================================================================
@@ -242,7 +242,7 @@ async def validate_strategy_complete():
         strategy_func=my_strategy,
         num_periods=5,
     )
-    
+
     # ========================================================================
     # STEP 5: Calculate comprehensive score
     # ========================================================================
@@ -254,7 +254,7 @@ async def validate_strategy_complete():
         out_of_sample_ratio=wf_result.out_of_sample_performance / wf_result.in_sample_performance,
         cross_market_pass_rate=multi_market_results.pass_rate,
     )
-    
+
     # ========================================================================
     # STEP 6: Calculate realistic trading costs
     # ========================================================================
@@ -266,14 +266,14 @@ async def validate_strategy_complete():
         include_fees=True,
         fee_bps=10.0,
     )
-    
+
     # ========================================================================
     # STEP 7: Generate comprehensive report
     # ========================================================================
     print("\n" + "="*80)
     print("COMPLETE STRATEGY VALIDATION REPORT")
     print("="*80)
-    
+
     print(f"\nBACKTEST RESULTS:")
     print(f"  Total Trades: {backtest.total_trades}")
     print(f"  Total Return: {backtest.total_return:.2%}")
@@ -283,26 +283,26 @@ async def validate_strategy_complete():
     print(f"  Max Drawdown: {backtest.max_drawdown:.2%}")
     print(f"  Win Rate: {backtest.win_rate:.2%}")
     print(f"  Profit Factor: {backtest.profit_factor:.2f}")
-    
+
     print(f"\nTRADING COSTS:")
     print(f"  Slippage: ${costs['slippage']['total_slippage_cost_usd']:.2f}")
     print(f"  Fees: ${costs['fees']['total_fees_usd']:.2f}")
     print(f"  Total Cost: ${costs['total_costs']['total_costs_usd']:.2f}")
     print(f"  Annual Drag: {costs['total_costs']['total_annual_drag_pct']:.2f}%")
-    
+
     print(f"\nMULTI-MARKET VALIDATION:")
     print(f"  Markets Tested: {len(multi_market_results.individual_results)}")
     print(f"  Pass Rate: {multi_market_results.pass_rate:.1%}")
     print(f"  Mean Sharpe: {multi_market_results.mean_sharpe:.2f}")
-    
+
     print(f"\nWALK-FORWARD VALIDATION:")
     print(f"  In-Sample Sharpe: {wf_result.in_sample_performance:.2f}")
     print(f"  Out-of-Sample Sharpe: {wf_result.out_of_sample_performance:.2f}")
     print(f"  OOS/IS Ratio: {wf_result.out_of_sample_performance / wf_result.in_sample_performance:.2f}")
     print(f"  Overfitting Score: {wf_result.overfitting_score:.1f}/100")
-    
+
     print("\n" + scorer.generate_score_report(scores))
-    
+
     # ========================================================================
     # STEP 8: Deployment decision
     # ========================================================================

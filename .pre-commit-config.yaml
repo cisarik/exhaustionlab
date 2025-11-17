@@ -1,0 +1,113 @@
+---
+# Pre-commit hooks for ExhaustionLab
+# Install: pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # Code formatting
+  - repo: https://github.com/psf/black
+    rev: 24.8.0
+    hooks:
+      - id: black
+        language_version: python3.13
+        args: [--line-length=240]
+        files: ^(exhaustionlab/|tests/)
+
+  # Linting
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        files: ^(exhaustionlab/|tests/)
+
+  # Import sorting
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: [--profile=black, --line-length=240]
+        files: ^(exhaustionlab/|tests/)
+
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^tests/bdd/features/.*\.feature$
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: detect-private-key
+
+  # Python-specific checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: debug-statements
+      - id: check-ast
+      - id: check-builtin-literals
+      - id: check-docstring-first
+
+  # YAML linting
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        args: [-d, "{extends: default, rules: {line-length: {max: 120}}}"]
+
+  # BDD-specific checks
+  - repo: local
+    hooks:
+      - id: bdd-feature-lint
+        name: Lint Gherkin Feature Files
+        entry: bash -c 'find tests/bdd/features -name "*.feature" -exec echo "✓ {}" \;'
+        language: system
+        files: ^tests/bdd/features/.*\.feature$
+        pass_filenames: false
+
+      - id: bdd-quick-test
+        name: Quick BDD Smoke Test
+        entry: poetry run pytest tests/bdd/test_strategy_extraction.py -x -q --tb=no
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: check-test-naming
+        name: Check Test Naming Convention
+        entry: bash -c 'find tests -name "test_*.py" -o -name "*_test.py" | grep -v __pycache__'
+        language: system
+        pass_filenames: false
+
+# Configuration
+default_language_version:
+  python: python3.13
+
+default_stages: [pre-commit]
+
+fail_fast: false
+
+# Exclude patterns
+exclude: |
+  (?x)^(
+    \.git/|
+    \.venv/|
+    \.cache/|
+    __pycache__/|
+    \.pytest_cache/|
+    htmlcov/|
+    \.coverage|
+    dist/|
+    build/|
+    .*\.egg-info/|
+    llm_debug_logs/|
+    evolved_strategies/|
+    data/
+  )

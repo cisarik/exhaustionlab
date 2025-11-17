@@ -9,7 +9,7 @@ async function loadPresets() {
   try {
     const response = await fetch("/api/presets/paper-trading");
     if (!response.ok) return;
-    
+
     const presets = await response.json();
     renderPresets(presets);
   } catch (error) {
@@ -21,7 +21,7 @@ async function loadPresets() {
 function renderPresets(presets) {
   const grid = document.getElementById("preset-grid");
   if (!grid) return;
-  
+
   grid.innerHTML = presets.map(preset => `
     <div class="preset-card">
       <div class="preset-header">
@@ -62,22 +62,22 @@ async function runBacktest(strategyId) {
     resultsDiv.style.display = "block";
     resultsDiv.scrollIntoView({ behavior: "smooth" });
   }
-  
+
   // Show loading
   document.getElementById("bt-return").textContent = "Loading...";
-  
+
   try {
     const response = await fetch("/api/backtest/run", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ strategy_id: strategyId }),
     });
-    
+
     if (!response.ok) throw new Error("Backtest failed");
-    
+
     const data = await response.json();
     currentBacktestResult = data.result;
-    
+
     displayBacktestResults(data.result);
   } catch (error) {
     console.error("Backtest error:", error);
@@ -88,15 +88,15 @@ async function runBacktest(strategyId) {
 // Display results
 function displayBacktestResults(result) {
   // Summary metrics
-  document.getElementById("bt-return").textContent = 
+  document.getElementById("bt-return").textContent =
     `${result.total_return >= 0 ? '+' : ''}${result.total_return_pct.toFixed(2)}%`;
-  document.getElementById("bt-return").className = 
+  document.getElementById("bt-return").className =
     `metric-value ${result.total_return >= 0 ? 'profit' : 'loss'}`;
-  
+
   document.getElementById("bt-sharpe").textContent = result.sharpe_ratio.toFixed(2);
   document.getElementById("bt-winrate").textContent = `${(result.win_rate * 100).toFixed(1)}%`;
   document.getElementById("bt-drawdown").textContent = `${(result.max_drawdown * 100).toFixed(1)}%`;
-  
+
   // Overview metrics
   document.getElementById("bt-total-trades").textContent = result.total_trades;
   document.getElementById("bt-winning").textContent = result.winning_trades;
@@ -104,10 +104,10 @@ function displayBacktestResults(result) {
   document.getElementById("bt-pf").textContent = result.profit_factor.toFixed(2);
   document.getElementById("bt-avg-win").textContent = `$${result.avg_win.toFixed(2)}`;
   document.getElementById("bt-avg-loss").textContent = `$${result.avg_loss.toFixed(2)}`;
-  
+
   // Trades list
   renderTradesList(result.trades);
-  
+
   // Equity curve
   renderEquityCurve(result.equity_curve);
 }
@@ -116,12 +116,12 @@ function displayBacktestResults(result) {
 function renderTradesList(trades) {
   const list = document.getElementById("bt-trades-list");
   if (!list) return;
-  
+
   if (!trades || trades.length === 0) {
     list.innerHTML = '<p class="empty-state">No trades to display</p>';
     return;
   }
-  
+
   list.innerHTML = trades.map(trade => `
     <div class="trade-item">
       <div class="trade-header">
@@ -144,23 +144,23 @@ function renderTradesList(trades) {
 function renderEquityCurve(equityCurve) {
   const canvas = document.getElementById("equity-chart");
   if (!canvas) return;
-  
+
   const ctx = canvas.getContext("2d");
   const width = canvas.width;
   const height = canvas.height;
-  
+
   // Clear canvas
   ctx.fillStyle = "#0d111a";
   ctx.fillRect(0, 0, width, height);
-  
+
   if (!equityCurve || equityCurve.length === 0) return;
-  
+
   // Find min/max
   const values = equityCurve.map(p => p[1]);
   const minVal = Math.min(...values);
   const maxVal = Math.max(...values);
   const range = maxVal - minVal;
-  
+
   // Draw grid
   ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
   ctx.lineWidth = 1;
@@ -171,25 +171,25 @@ function renderEquityCurve(equityCurve) {
     ctx.lineTo(width - 20, y);
     ctx.stroke();
   }
-  
+
   // Draw line
   ctx.strokeStyle = "#58f5c3";
   ctx.lineWidth = 2;
   ctx.beginPath();
-  
+
   equityCurve.forEach((point, i) => {
     const x = 40 + (width - 60) * i / (equityCurve.length - 1);
     const y = height - 40 - ((point[1] - minVal) / range) * (height - 60);
-    
+
     if (i === 0) {
       ctx.moveTo(x, y);
     } else {
       ctx.lineTo(x, y);
     }
   });
-  
+
   ctx.stroke();
-  
+
   // Draw labels
   ctx.fillStyle = "#94a3b8";
   ctx.font = "12px sans-serif";
@@ -203,7 +203,7 @@ function deployFromBacktest() {
     alert("No backtest results available");
     return;
   }
-  
+
   // Open deploy modal with strategy
   deployStrategy(currentBacktestResult.strategy_id, "Backtested Strategy");
 }
@@ -211,7 +211,7 @@ function deployFromBacktest() {
 // Export backtest
 function exportBacktest() {
   if (!currentBacktestResult) return;
-  
+
   const data = JSON.stringify(currentBacktestResult, null, 2);
   const blob = new Blob([data], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -227,7 +227,7 @@ function switchBacktestTab(tabName) {
   document.querySelectorAll(".results-tab").forEach(tab => {
     tab.classList.toggle("active", tab.dataset.tab === tabName);
   });
-  
+
   document.querySelectorAll(".results-panel").forEach(panel => {
     panel.classList.toggle("active", panel.dataset.panel === tabName);
   });
@@ -242,7 +242,7 @@ window.exportBacktest = exportBacktest;
 // Initialize
 document.addEventListener("DOMContentLoaded", () => {
   loadPresets();
-  
+
   // Run backtest button
   const runBtn = document.getElementById("run-backtest-btn");
   if (runBtn) {
@@ -251,7 +251,7 @@ document.addEventListener("DOMContentLoaded", () => {
       runBacktest("demo-001");
     });
   }
-  
+
   // Tab switching
   document.querySelectorAll(".results-tab").forEach(tab => {
     tab.addEventListener("click", () => switchBacktestTab(tab.dataset.tab));

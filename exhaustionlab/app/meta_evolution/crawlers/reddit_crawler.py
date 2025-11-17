@@ -5,11 +5,12 @@ Extracts trading strategy discussions from Reddit.
 Target subreddits: r/algotrading, r/TradingView, r/CryptoCurrency
 """
 
-import praw
-import time
-from typing import List, Dict, Optional, Any
 import logging
 import re
+import time
+from typing import Any, Dict, List, Optional
+
+import praw
 
 logger = logging.getLogger(__name__)
 
@@ -98,9 +99,7 @@ class RedditStrategyCrawler:
                 subreddit = self.reddit.subreddit(subreddit_name)
 
                 # Search posts
-                posts = subreddit.search(
-                    query, sort="relevance", time_filter="all", limit=max_results
-                )
+                posts = subreddit.search(query, sort="relevance", time_filter="all", limit=max_results)
 
                 for post in posts:
                     if post.score >= min_upvotes:
@@ -165,16 +164,12 @@ class RedditStrategyCrawler:
                 "title": post.title,
                 "author": str(post.author) if post.author else "[deleted]",
                 "subreddit": str(post.subreddit),
-                "description": (
-                    post.selftext[:500] if post.selftext else ""
-                ),  # First 500 chars
+                "description": (post.selftext[:500] if post.selftext else ""),  # First 500 chars
                 "upvotes": post.score,
                 "upvote_ratio": post.upvote_ratio,
                 "comments": post.num_comments,
                 "created_date": post.created_utc,
-                "has_code": bool(
-                    re.search(r"```|//@version|study\(|strategy\(", post.selftext or "")
-                ),
+                "has_code": bool(re.search(r"```|//@version|study\(|strategy\(", post.selftext or "")),
             }
         except Exception as e:
             logger.warning(f"Error extracting post info: {e}")

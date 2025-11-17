@@ -11,17 +11,16 @@ import io
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.figure import Figure
 from matplotlib.patches import Rectangle
-from matplotlib.collections import LineCollection
 
-from ..app.data.binance_rest import fetch_klines_csv_like
 from ..app.backtest.engine import compute_exhaustion_signals
+from ..app.data.binance_rest import fetch_klines_csv_like
 
 matplotlib.use("Agg")  # Non-interactive backend for server-side rendering
 
@@ -95,9 +94,7 @@ class ChartGenerator:
             df = fetch_klines_csv_like(symbol=symbol, interval=timeframe, limit=limit)
             if df.empty:
                 LOGGER.warning(f"No data for {symbol} {timeframe}")
-                return self._generate_error_image(
-                    f"No data available for {symbol} {timeframe}", width, height
-                )
+                return self._generate_error_image(f"No data available for {symbol} {timeframe}", width, height)
         except Exception as exc:
             LOGGER.exception(f"Failed to fetch klines: {exc}")
             return self._generate_error_image(str(exc), width, height)
@@ -184,9 +181,7 @@ class ChartGenerator:
 
         # Style main axis
         ax_main.set_facecolor(self.colors["axes_bg"])
-        ax_main.grid(
-            True, color=self.colors["grid"], linestyle="--", linewidth=0.5, alpha=0.5
-        )
+        ax_main.grid(True, color=self.colors["grid"], linestyle="--", linewidth=0.5, alpha=0.5)
         ax_main.tick_params(colors=self.colors["muted"], labelsize=9)
         for spine in ax_main.spines.values():
             spine.set_color(self.colors["grid"])
@@ -312,21 +307,12 @@ class ChartGenerator:
     def _draw_volume(self, ax, df):
         """Draw volume bars."""
         ax.set_facecolor(self.colors["axes_bg"])
-        ax.grid(
-            True, color=self.colors["grid"], linestyle="--", linewidth=0.5, alpha=0.3
-        )
+        ax.grid(True, color=self.colors["grid"], linestyle="--", linewidth=0.5, alpha=0.3)
         ax.tick_params(colors=self.colors["muted"], labelsize=8)
         for spine in ax.spines.values():
             spine.set_color(self.colors["grid"])
 
-        colors = [
-            (
-                self.colors["up"]
-                if df["Close"].iloc[i] >= df["Open"].iloc[i]
-                else self.colors["down"]
-            )
-            for i in range(len(df))
-        ]
+        colors = [(self.colors["up"] if df["Close"].iloc[i] >= df["Open"].iloc[i] else self.colors["down"]) for i in range(len(df))]
 
         ax.bar(range(len(df)), df["Volume"], color=colors, alpha=0.6, width=0.7)
         ax.set_xlim(-1, len(df))
@@ -395,9 +381,7 @@ class ChartGenerator:
 
         # Add legend if trades exist
         if buy_indices or sell_indices:
-            ax.legend(
-                loc="upper left", framealpha=0.8, facecolor=self.colors["axes_bg"]
-            )
+            ax.legend(loc="upper left", framealpha=0.8, facecolor=self.colors["axes_bg"])
 
     def _draw_equity_curve(self, ax, equity_curve):
         """
@@ -415,17 +399,13 @@ class ChartGenerator:
         # Clear volume panel and repurpose for equity
         ax.clear()
         ax.set_facecolor(self.colors["axes_bg"])
-        ax.grid(
-            True, color=self.colors["grid"], linestyle="--", linewidth=0.5, alpha=0.3
-        )
+        ax.grid(True, color=self.colors["grid"], linestyle="--", linewidth=0.5, alpha=0.3)
         ax.tick_params(colors=self.colors["muted"], labelsize=8)
         for spine in ax.spines.values():
             spine.set_color(self.colors["grid"])
 
         # Plot equity curve
-        ax.plot(
-            indices, equities, color="#58a6ff", linewidth=2, alpha=0.9, label="Equity"
-        )
+        ax.plot(indices, equities, color="#58a6ff", linewidth=2, alpha=0.9, label="Equity")
         ax.fill_between(
             indices,
             equities,
@@ -447,9 +427,7 @@ class ChartGenerator:
         ax.set_ylabel("Equity", color=self.colors["text"], fontsize=9)
         ax.legend(loc="upper left", framealpha=0.8, facecolor=self.colors["axes_bg"])
 
-    def _generate_error_image(
-        self, error_msg: str, width: int = 1400, height: int = 800
-    ) -> bytes:
+    def _generate_error_image(self, error_msg: str, width: int = 1400, height: int = 800) -> bytes:
         """Generate an error image with the error message."""
         fig = Figure(figsize=(width / 100, height / 100), facecolor="#0a0e14")
         ax = fig.add_subplot(111, facecolor="#0f1419")
@@ -502,9 +480,7 @@ class ChartGenerator:
 
 
 # Global instance with caching enabled
-_chart_generator = ChartGenerator(
-    cache_dir=Path.home() / ".cache" / "exhaustionlab_charts"
-)
+_chart_generator = ChartGenerator(cache_dir=Path.home() / ".cache" / "exhaustionlab_charts")
 
 
 def get_chart_generator() -> ChartGenerator:

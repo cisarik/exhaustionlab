@@ -5,24 +5,15 @@ from __future__ import annotations
 import asyncio
 from typing import AsyncGenerator
 
-from fastapi import APIRouter, HTTPException, Query, Body
+from fastapi import APIRouter, Body, HTTPException, Query
 from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 
 from .chart_generator import get_chart_generator
+from .demo_data import generate_demo_backtest_result, generate_demo_strategies, generate_overview_metrics, get_quick_start_presets
 from .evolution_service import get_evolution_service
+from .services import EvolutionAnalytics, LLMDebugLogStore, StrategyDashboardService
 from .settings_service import get_settings_service
-from .demo_data import (
-    generate_demo_strategies,
-    generate_demo_backtest_result,
-    get_quick_start_presets,
-    generate_overview_metrics,
-)
-from .services import (
-    EvolutionAnalytics,
-    LLMDebugLogStore,
-    StrategyDashboardService,
-)
 
 
 class EvolutionStartRequest(BaseModel):
@@ -148,9 +139,7 @@ def build_api_router(
     async def simulate_strategy(strategy_id: str):
         result = await strategy_service.run_simulation(strategy_id)
         if result.status == "error":
-            raise HTTPException(
-                status_code=400, detail=result.detail or "Simulation failed"
-            )
+            raise HTTPException(status_code=400, detail=result.detail or "Simulation failed")
         return result.model_dump(mode="json")
 
     @router.get("/api/evolution/overview")
@@ -195,16 +184,13 @@ def build_api_router(
                 width=width,
                 height=height,
                 show_signals=signals,
-                show_volume=volume
-                and not show_equity,  # Use volume panel for equity if enabled
+                show_volume=volume and not show_equity,  # Use volume panel for equity if enabled
                 trades=trades,
                 equity_curve=equity_curve,
             )
             return Response(content=img_bytes, media_type="image/png")
         except Exception as exc:
-            raise HTTPException(
-                status_code=500, detail=f"Chart generation failed: {exc}"
-            )
+            raise HTTPException(status_code=500, detail=f"Chart generation failed: {exc}")
 
     @router.post("/api/charts/clear-cache")
     def clear_chart_cache():
@@ -296,11 +282,7 @@ def build_api_router(
         evolution_service = get_evolution_service()
         # Find strategy in evolution service
         strategy = next(
-            (
-                s
-                for s in evolution_service.strategies
-                if s.get("strategy_id") == strategy_id
-            ),
+            (s for s in evolution_service.strategies if s.get("strategy_id") == strategy_id),
             None,
         )
         if not strategy:
@@ -318,11 +300,7 @@ def build_api_router(
     @router.post("/api/trading/deploy")
     async def deploy_strategy(request: DeployStrategyRequest):
         """Deploy a strategy for live/paper trading."""
-        from .live_trading_service import (
-            live_trading_service,
-            TradingMode,
-            RiskParameters,
-        )
+        from .live_trading_service import RiskParameters, TradingMode, live_trading_service
 
         risk_params = RiskParameters(
             max_position_size=request.max_position_size,
@@ -653,11 +631,7 @@ def build_api_router(
 
         # Get strategies to test
         if request.strategy_ids:
-            strategies = [
-                s
-                for s in evolution_service.get_hall_of_fame(limit=50)
-                if s["id"] in request.strategy_ids
-            ]
+            strategies = [s for s in evolution_service.get_hall_of_fame(limit=50) if s["id"] in request.strategy_ids]
         else:
             # Test top 10 strategies
             strategies = evolution_service.get_hall_of_fame(limit=10)
@@ -718,11 +692,7 @@ def build_api_router(
                     "avg_win_rate": round(avg_win_rate, 3),
                     "market_results": market_results,
                     "tested_at": datetime.now().isoformat(),
-                    "status": (
-                        "approved"
-                        if passed_markets / total_markets >= 0.6
-                        else "rejected"
-                    ),
+                    "status": ("approved" if passed_markets / total_markets >= 0.6 else "rejected"),
                 }
             )
 
@@ -761,6 +731,7 @@ def build_api_router(
         Returns parsed backtest with all trades and metrics.
         """
         from pathlib import Path
+
         from exhaustionlab.app.validation import parse_backtest_from_directory
 
         try:
@@ -805,9 +776,7 @@ def build_api_router(
                 },
             }
         except Exception as e:
-            raise HTTPException(
-                status_code=500, detail=f"Failed to parse backtest: {str(e)}"
-            )
+            raise HTTPException(status_code=500, detail=f"Failed to parse backtest: {str(e)}")
 
     @router.post("/api/validation/calculate-score")
     async def calculate_comprehensive_score(
@@ -819,10 +788,8 @@ def build_api_router(
         Returns weighted score breakdown (Performance/Risk/Execution/Robustness).
         """
         from pathlib import Path
-        from exhaustionlab.app.validation import (
-            parse_backtest_from_directory,
-            ComprehensiveScorer,
-        )
+
+        from exhaustionlab.app.validation import ComprehensiveScorer, parse_backtest_from_directory
 
         try:
             # Parse backtest
@@ -846,25 +813,11 @@ def build_api_router(
                 "status": "success",
                 "scores": scores.to_dict(),
                 "report": report,
-                "deployment_status": (
-                    "approved"
-                    if scores.total_score >= 75
-                    else "conditional" if scores.total_score >= 65 else "not_approved"
-                ),
-                "recommended_position_size": (
-                    2.0 * (scores.total_score / 100)
-                    if scores.total_score >= 75
-                    else (
-                        1.0 * (scores.total_score / 100)
-                        if scores.total_score >= 65
-                        else 0.0
-                    )
-                ),
+                "deployment_status": ("approved" if scores.total_score >= 75 else "conditional" if scores.total_score >= 65 else "not_approved"),
+                "recommended_position_size": (2.0 * (scores.total_score / 100) if scores.total_score >= 75 else (1.0 * (scores.total_score / 100) if scores.total_score >= 65 else 0.0)),
             }
         except Exception as e:
-            raise HTTPException(
-                status_code=500, detail=f"Failed to calculate score: {str(e)}"
-            )
+            raise HTTPException(status_code=500, detail=f"Failed to calculate score: {str(e)}")
 
     @router.post("/api/validation/generate-report")
     async def generate_validation_report(payload: ReportGenerateRequest = Body(...)):
@@ -874,12 +827,8 @@ def build_api_router(
         Returns path to generated report file.
         """
         from pathlib import Path
-        from exhaustionlab.app.validation import (
-            parse_backtest_from_directory,
-            ComprehensiveScorer,
-            generate_validation_report,
-            calculate_trading_costs,
-        )
+
+        from exhaustionlab.app.validation import ComprehensiveScorer, calculate_trading_costs, generate_validation_report, parse_backtest_from_directory
 
         try:
             # Parse backtest
@@ -915,9 +864,7 @@ def build_api_router(
                 from datetime import datetime
 
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                output_path = (
-                    Path("reports") / f"validation_{payload.symbol}_{timestamp}.html"
-                )
+                output_path = Path("reports") / f"validation_{payload.symbol}_{timestamp}.html"
 
             # Generate report
             report_path = generate_validation_report(
@@ -932,16 +879,10 @@ def build_api_router(
                 "status": "success",
                 "report_path": str(report_path),
                 "total_score": scores.total_score,
-                "deployment_status": (
-                    "approved"
-                    if scores.total_score >= 75
-                    else "conditional" if scores.total_score >= 65 else "not_approved"
-                ),
+                "deployment_status": ("approved" if scores.total_score >= 75 else "conditional" if scores.total_score >= 65 else "not_approved"),
             }
         except Exception as e:
-            raise HTTPException(
-                status_code=500, detail=f"Failed to generate report: {str(e)}"
-            )
+            raise HTTPException(status_code=500, detail=f"Failed to generate report: {str(e)}")
 
     @router.post("/api/validation/estimate-slippage")
     async def estimate_slippage(payload: SlippageEstimateRequest = Body(...)):
@@ -980,9 +921,7 @@ def build_api_router(
                 },
             }
         except Exception as e:
-            raise HTTPException(
-                status_code=500, detail=f"Failed to estimate slippage: {str(e)}"
-            )
+            raise HTTPException(status_code=500, detail=f"Failed to estimate slippage: {str(e)}")
 
     @router.post("/api/validation/calculate-costs")
     async def calculate_trading_costs_api(payload: TradingCostsRequest = Body(...)):
@@ -992,10 +931,8 @@ def build_api_router(
         Returns comprehensive cost breakdown.
         """
         from pathlib import Path
-        from exhaustionlab.app.validation import (
-            parse_backtest_from_directory,
-            calculate_trading_costs,
-        )
+
+        from exhaustionlab.app.validation import calculate_trading_costs, parse_backtest_from_directory
 
         try:
             # Parse backtest to get trades
@@ -1017,9 +954,7 @@ def build_api_router(
                 "costs": costs,
             }
         except Exception as e:
-            raise HTTPException(
-                status_code=500, detail=f"Failed to calculate costs: {str(e)}"
-            )
+            raise HTTPException(status_code=500, detail=f"Failed to calculate costs: {str(e)}")
 
     @router.get("/api/validation/liquidity-info/{symbol}")
     async def get_liquidity_info(symbol: str):
@@ -1040,8 +975,6 @@ def build_api_router(
                 "liquidity_info": liquidity_info,
             }
         except Exception as e:
-            raise HTTPException(
-                status_code=500, detail=f"Failed to get liquidity info: {str(e)}"
-            )
+            raise HTTPException(status_code=500, detail=f"Failed to get liquidity info: {str(e)}")
 
     return router

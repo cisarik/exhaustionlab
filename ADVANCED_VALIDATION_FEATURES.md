@@ -284,34 +284,34 @@ class ExecutionMetrics:
     total_orders: int
     filled_orders: int
     fill_rate: float
-    
+
     # Price quality
     avg_fill_price_vs_signal_bps: float
     avg_price_improvement_bps: float
     worst_fill_bps: float
     best_fill_bps: float
-    
+
     # Timing
     avg_execution_time_ms: float
     median_execution_time_ms: float
     pct_filled_under_1s: float
     pct_filled_under_5s: float
-    
+
     # Market impact
     avg_market_impact_bps: float
     temporary_impact_bps: float
     permanent_impact_bps: float
-    
+
     # Adverse selection
     adverse_selection_cost_bps: float
     information_leakage_score: float
-    
+
     # Venue analysis
     maker_fill_rate: float
     taker_fill_rate: float
     maker_avg_improvement_bps: float
     taker_avg_cost_bps: float
-    
+
     # Overall
     execution_quality: ExecutionQuality
     quality_score: float
@@ -349,7 +349,7 @@ for result in results.individual_results:
         symbol=result.config.symbol,
         portfolio_size_usd=100000,
     )
-    
+
     # Calculate total costs
     costs = calculate_trading_costs(
         trades_df=result.trades_df,
@@ -358,12 +358,12 @@ for result in results.individual_results:
         include_fees=True,
         fee_bps=10.0,
     )
-    
+
     # Analyze execution quality
     exec_metrics = execution_analyzer.analyze_execution(
         trades_df=result.trades_df
     )
-    
+
     print(f"{result.config.symbol} {result.config.timeframe}:")
     print(f"  Avg Slippage: {portfolio_slippage['avg_slippage_per_trade_bps']:.2f} bps")
     print(f"  Annual Drag: {costs['total_costs']['total_annual_drag_pct']:.2f}%")
@@ -566,27 +566,27 @@ Using square-root model:
 async def estimate_slippage(request: dict):
     """Estimate slippage for a strategy."""
     estimator = SlippageEstimator()
-    
+
     estimate = estimator.estimate_slippage(
         symbol=request['symbol'],
         order_size_usd=request['order_size_usd'],
         signal_frequency=request['signal_frequency'],
         volatility=request['volatility'],
     )
-    
+
     return estimate.to_dict()
 
 @router.post("/api/validation/calculate-costs")
 async def calculate_costs(request: dict):
     """Calculate total trading costs."""
     trades_df = pd.DataFrame(request['trades'])
-    
+
     costs = calculate_trading_costs(
         trades_df=trades_df,
         symbol=request['symbol'],
         portfolio_size_usd=request['portfolio_size_usd'],
     )
-    
+
     return costs
 
 @router.post("/api/validation/execution-quality")
@@ -594,16 +594,16 @@ async def analyze_execution(request: dict):
     """Analyze execution quality."""
     analyzer = ExecutionQualityAnalyzer()
     trades_df = pd.DataFrame(request['trades'])
-    
+
     metrics = analyzer.analyze_execution(trades_df)
-    
+
     return metrics.to_dict()
 
 @router.get("/api/validation/liquidity-info/{symbol}")
 async def get_liquidity_info(symbol: str):
     """Get liquidity information for a symbol."""
     estimator = SlippageEstimator()
-    
+
     return estimator.get_symbol_liquidity_info(symbol)
 ```
 

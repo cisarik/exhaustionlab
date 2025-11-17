@@ -6,10 +6,10 @@ We already have 70 strategies extracted to JSON files.
 This script migrates them to the new SQLite database.
 """
 
-import sys
-import os
-from pathlib import Path
 import logging
+import os
+import sys
+from pathlib import Path
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 sys.path.insert(0, os.path.dirname(__file__))
 
 from exhaustionlab.app.meta_evolution.knowledge_base_storage import KnowledgeBaseStorage
-from exhaustionlab.app.meta_evolution.strategy_database import StrategyDatabase
 from exhaustionlab.app.meta_evolution.quality_scorer import StrategyQualityScorer
+from exhaustionlab.app.meta_evolution.strategy_database import StrategyDatabase
 
 
 def migrate():
@@ -58,9 +58,7 @@ def migrate():
 
     for idx, strategy in enumerate(all_strategies, 1):
         try:
-            logger.info(
-                f"[{idx}/{len(all_strategies)}] Migrating: {strategy.get('name', 'Unknown')}"
-            )
+            logger.info(f"[{idx}/{len(all_strategies)}] Migrating: {strategy.get('name', 'Unknown')}")
 
             # Prepare for database
             db_strategy = {
@@ -73,9 +71,7 @@ def migrate():
                 "forks": strategy.get("forks", 0),
                 "watchers": strategy.get("watchers", 0),
                 "quality_score": strategy.get("quality_score", 0),
-                "quality_category": scorer.get_quality_category(
-                    strategy.get("quality_score", 0)
-                ),
+                "quality_category": scorer.get_quality_category(strategy.get("quality_score", 0)),
                 "has_code": False,  # Will update if we find code
                 "has_documentation": False,
                 "tags": strategy.get("topics", []) if strategy.get("topics") else [],
@@ -85,9 +81,7 @@ def migrate():
             saved = db.save_strategy(db_strategy)
             migrated += 1
 
-            logger.info(
-                f"  ✅ Migrated: {saved.name} (score: {saved.quality_score:.1f})"
-            )
+            logger.info(f"  ✅ Migrated: {saved.name} (score: {saved.quality_score:.1f})")
 
         except Exception as e:
             logger.error(f"  ❌ Failed to migrate: {e}")
@@ -114,9 +108,7 @@ def migrate():
 
     top = db.get_top_quality(limit=10)
     for idx, s in enumerate(top, 1):
-        logger.info(
-            f"{idx}. {s.name} - {s.quality_score:.1f} ({s.quality_category}) - ⭐ {s.stars}"
-        )
+        logger.info(f"{idx}. {s.name} - {s.quality_score:.1f} ({s.quality_category}) - ⭐ {s.stars}")
 
     logger.info(f"{'='*70}")
 

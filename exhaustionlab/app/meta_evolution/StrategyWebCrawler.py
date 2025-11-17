@@ -11,13 +11,13 @@ import json
 import logging
 import re
 import time
-from typing import List, Dict, Optional, Any
 from dataclasses import dataclass
-from urllib.parse import urljoin, urlparse
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import feedparser
 import requests
 from bs4 import BeautifulSoup
-import feedparser
 
 from .meta_config import StrategyExample
 
@@ -186,9 +186,7 @@ class StrategyWebCrawler:
             ],
         }
 
-    def extract_strategy_examples(
-        self, max_examples: int = 50
-    ) -> List[StrategyExample]:
+    def extract_strategy_examples(self, max_examples: int = 50) -> List[StrategyExample]:
         """Extract strategy examples from configured web sources."""
 
         extracted_examples = []
@@ -200,9 +198,7 @@ class StrategyWebCrawler:
             self.logger.info(f"Extracting from {source.name}")
 
             try:
-                source_examples = self._extract_from_source(
-                    source, max_examples // len([s for s in self.sources if s.enabled])
-                )
+                source_examples = self._extract_from_source(source, max_examples // len([s for s in self.sources if s.enabled]))
                 extracted_examples.extend(source_examples)
 
                 # Rate limiting between sources
@@ -220,9 +216,7 @@ class StrategyWebCrawler:
 
         return ranked_examples[:max_examples]
 
-    def _extract_from_source(
-        self, source: SourceConfig, limit: int
-    ) -> List[StrategyExample]:
+    def _extract_from_source(self, source: SourceConfig, limit: int) -> List[StrategyExample]:
         """Extract examples from specific source."""
 
         if source.name == "github_strategies":
@@ -236,9 +230,7 @@ class StrategyWebCrawler:
         else:
             return []
 
-    def _extract_github_strategies(
-        self, source: SourceConfig, limit: int
-    ) -> List[StrategyExample]:
+    def _extract_github_strategies(self, source: SourceConfig, limit: int) -> List[StrategyExample]:
         """Extract strategy examples from GitHub repositories."""
 
         examples = []
@@ -252,7 +244,7 @@ class StrategyWebCrawler:
 
             try:
                 # GitHub API search (simplified for demo)
-                search_url = f"https://api.github.com/search/repositories"
+                search_url = "https://api.github.com/search/repositories"
                 params = {
                     "q": f"{term} language:python stars:>100",
                     "sort": "stars",
@@ -273,10 +265,7 @@ class StrategyWebCrawler:
 
                     # Extract strategy from README or main Python file
                     example = self._extract_github_repo_example(repo)
-                    if (
-                        example
-                        and self._score_quality(example) >= source.quality_threshold
-                    ):
+                    if example and self._score_quality(example) >= source.quality_threshold:
                         examples.append(example)
 
             except Exception as e:
@@ -303,9 +292,7 @@ class StrategyWebCrawler:
             files = response.json()
 
             # Find main strategy files
-            strategy_files = [
-                f for f in files if self._is_strategy_file(f.get("name", ""))
-            ]
+            strategy_files = [f for f in files if self._is_strategy_file(f.get("name", ""))]
 
             if not strategy_files:
                 return None
@@ -317,19 +304,24 @@ class StrategyWebCrawler:
             if file_content:
                 # Extract indicators and strategy type
                 indicators_used = self._extract_indicators_from_code(file_content)
-                strategy_type = self._detect_strategy_type(
-                    file_content, indicators_used
-                )
+                strategy_type = self._detect_strategy_type(file_content, indicators_used)
+                tags = list(indicators_used)
+                if strategy_type:
+                    tags.append(strategy_type)
+
+                description_text = description or repo_name.split("/")[-1]
+                if repo_url:
+                    description_text = f"{description_text} ({repo_url})"
 
                 return StrategyExample(
                     name=repo_name.split("/")[-1],
-                    description=description,
+                    description=description_text,
                     source="github",
                     code=file_content,
                     performance_metrics=self._estimate_performance(file_content),
                     market_conditions="unknown",
                     risk_profile="balanced",
-                    tags=indicators_used,
+                    tags=tags,
                 )
 
         except Exception as e:
@@ -337,9 +329,7 @@ class StrategyWebCrawler:
 
         return None
 
-    def _extract_reddit_strategies(
-        self, source: SourceConfig, limit: int
-    ) -> List[StrategyExample]:
+    def _extract_reddit_strategies(self, source: SourceConfig, limit: int) -> List[StrategyExample]:
         """Extract strategies from Reddit (lower quality but good for variety)."""
 
         examples = []
@@ -371,10 +361,7 @@ class StrategyWebCrawler:
 
                     # Extract strategy from Reddit post
                     example = self._extract_reddit_post(entry)
-                    if (
-                        example
-                        and self._score_quality(example) >= source.quality_threshold
-                    ):
+                    if example and self._score_quality(example) >= source.quality_threshold:
                         examples.append(example)
 
             except Exception as e:
@@ -411,16 +398,19 @@ class StrategyWebCrawler:
             # Extract indicators and classify
             indicators_used = self._extract_indicators_from_code(main_code)
             strategy_type = self._detect_strategy_type(main_code, indicators_used)
+            tags = list(indicators_used)
+            if strategy_type:
+                tags.append(strategy_type)
 
             return StrategyExample(
                 name="reddit_" + title[:30].replace(" ", "_").lower(),
-                description=title,
+                description=description or title,
                 source="reddit",
                 code=main_code,
                 performance_metrics={},
                 market_conditions="unknown",
                 risk_profile="high_risk",  # Reddit strategies often risky
-                tags=indicators_used,
+                tags=tags,
             )
 
         except Exception as e:
@@ -428,9 +418,7 @@ class StrategyWebCrawler:
 
         return None
 
-    def _extract_tradingview_scripts(
-        self, source: SourceConfig, limit: int
-    ) -> List[StrategyExample]:
+    def _extract_tradingview_scripts(self, source: SourceConfig, limit: int) -> List[StrategyExample]:
         """Extract Pine scripts from TradingView."""
 
         examples = []
@@ -441,9 +429,7 @@ class StrategyWebCrawler:
 
         return examples
 
-    def _extract_medium_articles(
-        self, source: SourceConfig, limit: int
-    ) -> List[StrategyExample]:
+    def _extract_medium_articles(self, source: SourceConfig, limit: int) -> List[StrategyExample]:
         """Extract from Medium quantitative research articles."""
 
         examples = []
@@ -469,10 +455,7 @@ class StrategyWebCrawler:
 
                     if any(term.lower() in content.lower() for term in search_terms):
                         example = self._extract_medium_article(entry)
-                        if (
-                            example
-                            and self._score_quality(example) >= source.quality_threshold
-                        ):
+                        if example and self._score_quality(example) >= source.quality_threshold:
                             examples.append(example)
 
             except Exception as e:
@@ -527,15 +510,11 @@ class StrategyWebCrawler:
 
         return None
 
-    def _filter_by_quality(
-        self, examples: List[StrategyExample]
-    ) -> List[StrategyExample]:
+    def _filter_by_quality(self, examples: List[StrategyExample]) -> List[StrategyExample]:
         """Filter examples by quality score."""
         return [e for e in examples if self._score_quality(e) >= 0.3]
 
-    def _rank_by_relevance(
-        self, examples: List[StrategyExample]
-    ) -> List[StrategyExample]:
+    def _rank_by_relevance(self, examples: List[StrategyExample]) -> List[StrategyExample]:
         """Rank examples by relevance score."""
         return sorted(examples, key=lambda x: self._score_quality(x), reverse=True)
 
@@ -663,9 +642,7 @@ class StrategyWebCrawler:
                 return strategy_type
 
         # Fallback based on indicators
-        if "RSI" in indicators and any(
-            i in indicators for i in ["Bollinger Bands", "Stochastic"]
-        ):
+        if "RSI" in indicators and any(i in indicators for i in ["Bollinger Bands", "Stochastic"]):
             return "mean_reversion"
         elif "MACD" in indicators:
             return "momentum"
@@ -697,9 +674,7 @@ class StrategyWebCrawler:
 
         filename_lower = filename.lower()
 
-        return any(filename_lower.endswith(ext) for ext in strategy_extensions) or any(
-            keyword in filename_lower for keyword in strategy_keywords
-        )
+        return any(filename_lower.endswith(ext) for ext in strategy_extensions) or any(keyword in filename_lower for keyword in strategy_keywords)
 
     def _is_strategy_code(self, code: str) -> bool:
         """Check if code appears to be trading strategy code."""
@@ -707,16 +682,10 @@ class StrategyWebCrawler:
         code_lower = code.lower()
 
         # Must contain some trading indicators
-        has_indicators = any(
-            ind in code_lower
-            for ind in ["rsi(", "macd(", "sma(", "ema(", "atr(", "bb("]
-        )
+        has_indicators = any(ind in code_lower for ind in ["rsi(", "macd(", "sma(", "ema(", "atr(", "bb("])
 
         # Must contain trading logic
-        has_trading_terms = any(
-            term in code_lower
-            for term in ["buy", "sell", "signal", "position", "trade"]
-        )
+        has_trading_terms = any(term in code_lower for term in ["buy", "sell", "signal", "position", "trade"])
 
         # Must be reasonable length
         is_reasonable_length = 20 < len(code) < 5000
@@ -738,9 +707,7 @@ class StrategyWebCrawler:
                 return base64.b64decode(content).decode("utf-8")
 
         except Exception as e:
-            self.logger.warning(
-                f"Failed to get GitHub file {repo_name}/{file_path}: {e}"
-            )
+            self.logger.warning(f"Failed to get GitHub file {repo_name}/{file_path}: {e}")
 
         return None
 
@@ -756,9 +723,7 @@ class StrategyWebCrawler:
 
         self.last_request_time[domain] = time.time()
 
-    def save_extracted_examples(
-        self, examples: List[StrategyExample], filename: str = "extracted_examples.json"
-    ):
+    def save_extracted_examples(self, examples: List[StrategyExample], filename: str = "extracted_examples.json"):
         """Save extracted examples to cache."""
 
         file_path = self.cache_dir / filename
@@ -784,9 +749,7 @@ class StrategyWebCrawler:
 
         self.logger.info(f"Saved {len(examples)} extracted examples to {file_path}")
 
-    def load_cached_examples(
-        self, filename: str = "extracted_examples.json"
-    ) -> List[StrategyExample]:
+    def load_cached_examples(self, filename: str = "extracted_examples.json") -> List[StrategyExample]:
         """Load previously extracted examples from cache."""
 
         file_path = self.cache_dir / filename

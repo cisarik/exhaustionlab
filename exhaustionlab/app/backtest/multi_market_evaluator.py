@@ -1,27 +1,27 @@
 """
 Multi-Market Strategy Evaluation Framework
 
-Tests strategies across different markets, timeframes, 
+Tests strategies across different markets, timeframes,
 and market conditions for robust fitness evaluation.
 """
 
 from __future__ import annotations
 
 import asyncio
-import logging
-from dataclasses import dataclass, asdict
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
 import json
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import logging
+import sqlite3
 import tempfile
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 
+from ..data.binance_rest import fetch_klines_csv_like
 from .engine import run_pyne
 from .strategy_registry import StrategyMetrics, StrategyRegistry
-from ..data.binance_rest import fetch_klines_csv_like
 
 
 @dataclass
@@ -46,9 +46,7 @@ class MarketConfig:
 class MultiMarketEvaluator:
     """Concurrent multi-market strategy testing."""
 
-    def __init__(
-        self, strategy_registry: StrategyRegistry, cache_dir: Optional[Path] = None
-    ):
+    def __init__(self, strategy_registry: StrategyRegistry, cache_dir: Optional[Path] = None):
         self.registry = strategy_registry
         self.cache_dir = cache_dir or Path.home() / ".exhaustionlab" / "market_cache"
         self.cache_dir.mkdir(parents=True, exist_ok=True)
@@ -73,23 +71,15 @@ class MultiMarketEvaluator:
             # Medium volatility altcoins
             MarketConfig("ADAUSDT", "1m", "spot", "medium", "bull", lookback_days=21),
             MarketConfig("SOLUSDT", "5m", "spot", "medium", "bull", lookback_days=14),
-            MarketConfig(
-                "MATICUSDT", "15m", "spot", "medium", "bull", lookback_days=10
-            ),
+            MarketConfig("MATICUSDT", "15m", "spot", "medium", "bull", lookback_days=10),
             # Lower volume, higher volatility pairs
             MarketConfig("DOGEUSDT", "1m", "spot", "high", "bull", lookback_days=21),
-            MarketConfig(
-                "SHIBUSDT", "5m", "spot", "very_high", "bull", lookback_days=14
-            ),
+            MarketConfig("SHIBUSDT", "5m", "spot", "very_high", "bull", lookback_days=14),
             # Different market types (if available)
             MarketConfig("BTCUSDT", "1m", "futures", "high", "bull", lookback_days=30),
             # Cross-market correlations (commodities, forex analogues in crypto)
-            MarketConfig(
-                "XAUUSDT", "1m", "spot", "medium", "bull", lookback_days=21
-            ),  # Gold proxy
-            MarketConfig(
-                "EURUSDT", "15m", "spot", "low", "sideways", lookback_days=14
-            ),  # Forex proxy
+            MarketConfig("XAUUSDT", "1m", "spot", "medium", "bull", lookback_days=21),  # Gold proxy
+            MarketConfig("EURUSDT", "15m", "spot", "low", "sideways", lookback_days=14),  # Forex proxy
         ]
 
         return markets
@@ -134,17 +124,13 @@ class MultiMarketEvaluator:
         # Different timeframes ensure temporal robustness
         timeframes = ["1m", "5m", "15m"]
         for tf in timeframes:
-            tf_markets = [
-                m for m in self.markets if m.timeframe == tf and m not in selected
-            ]
+            tf_markets = [m for m in self.markets if m.timeframe == tf and m not in selected]
             if tf_markets:
                 selected.append(tf_markets[0])
 
         return selected[:8]  # Limit to reasonable number for optimization
 
-    async def _evaluate_single_market(
-        self, strategy_id: str, version_id: str, market: MarketConfig
-    ) -> StrategyMetrics:
+    async def _evaluate_single_market(self, strategy_id: str, version_id: str, market: MarketConfig) -> StrategyMetrics:
         """Evaluate strategy on single market/timeframe combination."""
         try:
             # Get market data (with caching)
@@ -166,9 +152,7 @@ class MultiMarketEvaluator:
                 temp_script = Path(f.name)
 
             try:
-                with tempfile.NamedTemporaryFile(
-                    mode="w", suffix=".ohlcv", delete=False
-                ) as f:
+                with tempfile.NamedTemporaryFile(mode="w", suffix=".ohlcv", delete=False) as f:
                     df.to_csv(f.name, index=False)
                     temp_data = Path(f.name)
 
@@ -180,14 +164,10 @@ class MultiMarketEvaluator:
                 )
 
                 # Parse results and calculate metrics
-                metrics = self._calculate_comprehensive_metrics(
-                    result.output_dir, df, market
-                )
+                metrics = self._calculate_comprehensive_metrics(result.output_dir, df, market)
 
                 # Store results
-                self.registry.record_strategy_metrics(
-                    strategy_id, version_id, market.symbol, market.timeframe, metrics
-                )
+                self.registry.record_strategy_metrics(strategy_id, version_id, market.symbol, market.timeframe, metrics)
 
                 return metrics
 
@@ -196,10 +176,7 @@ class MultiMarketEvaluator:
                 temp_data.unlink(missing_ok=True)
 
         except Exception as e:
-            self.logger.error(
-                f"Failed to evaluate {strategy_id} on {market.symbol} "
-                f"{market.timeframe}: {e}"
-            )
+            self.logger.error(f"Failed to evaluate {strategy_id} on {market.symbol} " f"{market.timeframe}: {e}")
             raise
 
     async def _get_market_data(self, market: MarketConfig) -> pd.DataFrame:
@@ -208,9 +185,7 @@ class MultiMarketEvaluator:
 
         # Check cache freshness
         if cache_file.exists():
-            file_age = datetime.now() - datetime.fromtimestamp(
-                cache_file.stat().st_mtime
-            )
+            file_age = datetime.now() - datetime.fromtimestamp(cache_file.stat().st_mtime)
             if file_age.days < self.cache_ttl_days:
                 df = pd.read_csv(cache_file)
                 if len(df) >= market.min_data_points:
@@ -218,14 +193,10 @@ class MultiMarketEvaluator:
 
         # Fetch fresh data
         limit = min(1500, market.lookback_days * 24 * 60)  # Rough estimate for 1m data
-        df = fetch_klines_csv_like(
-            symbol=market.symbol, interval=market.timeframe, limit=limit
-        )
+        df = fetch_klines_csv_like(symbol=market.symbol, interval=market.timeframe, limit=limit)
 
         if len(df) < market.min_data_points:
-            raise ValueError(
-                f"Insufficient data for {market.symbol} {market.timeframe}"
-            )
+            raise ValueError(f"Insufficient data for {market.symbol} {market.timeframe}")
 
         # Cache results
         df.to_csv(cache_file, index=False)
@@ -236,18 +207,14 @@ class MultiMarketEvaluator:
         """Get version-specific strategy information."""
         with sqlite3.connect(self.registry.db_path) as conn:
             conn.row_factory = sqlite3.Row
-            row = conn.execute(
-                "SELECT * FROM strategy_versions WHERE version_id = ?", (version_id,)
-            ).fetchone()
+            row = conn.execute("SELECT * FROM strategy_versions WHERE version_id = ?", (version_id,)).fetchone()
 
             if row:
                 return dict(row)
             else:
                 raise ValueError(f"Version {version_id} not found")
 
-    def _calculate_comprehensive_metrics(
-        self, output_dir: Path, df: pd.DataFrame, market: MarketConfig
-    ) -> StrategyMetrics:
+    def _calculate_comprehensive_metrics(self, output_dir: Path, df: pd.DataFrame, market: MarketConfig) -> StrategyMetrics:
         """Calculate comprehensive trading metrics including real-world factors."""
 
         # Parse PyneCore output (simplified - would need actual parsing)
@@ -268,9 +235,7 @@ class MultiMarketEvaluator:
         # Risk metrics
         equity_curve = pd.Series(equity.get("equity", []))
         returns = equity_curve.pct_change().dropna()
-        max_drawdown = (
-            equity_curve.cummax() - equity_curve
-        ).max() / equity_curve.cummax().max()
+        max_drawdown = (equity_curve.cummax() - equity_curve).max() / equity_curve.cummax().max()
 
         # Enhanced risk metrics
         downside_returns = returns[returns < 0]
@@ -282,16 +247,7 @@ class MultiMarketEvaluator:
         market_impact = self._estimate_market_impact(trades, df, market)
 
         # Consistency metrics
-        win_loss_ratio = (
-            abs(pnl_series[pnl_series > 0].mean() / pnl_series[pnl_series < 0].mean())
-            if (pnl_series < 0).any()
-            else 1.0
-        )
-        profit_factor = (
-            abs(pnl_series[pnl_series > 0].sum() / pnl_series[pnl_series < 0].sum())
-            if (pnl_series < 0).any() and (pnl_series > 0).any()
-            else 1.0
-        )
+        profit_factor = abs(pnl_series[pnl_series > 0].sum() / pnl_series[pnl_series < 0].sum()) if (pnl_series < 0).any() and (pnl_series > 0).any() else 1.0
 
         return StrategyMetrics(
             total_pnl=total_pnl,
@@ -307,15 +263,11 @@ class MultiMarketEvaluator:
             execution_delay_ms=execution_delay,
             market_impact=market_impact,
             correlation_to_benchmark=self._calculate_correlation(equity_curve, df),
-            volatility_adjusted_return=(
-                returns.mean() / returns.std() if returns.std() > 0 else 0
-            ),
+            volatility_adjusted_return=(returns.mean() / returns.std() if returns.std() > 0 else 0),
             downside_deviation=downside_deviation,
         )
 
-    def _calculate_fallback_metrics(
-        self, df: pd.DataFrame, market: MarketConfig
-    ) -> StrategyMetrics:
+    def _calculate_fallback_metrics(self, df: pd.DataFrame, market: MarketConfig) -> StrategyMetrics:
         """Calculate basic metrics when PyneCore output not available."""
         # Simple price-based simulation (very basic fallback)
         returns = df["close"].pct_change().dropna()
@@ -333,9 +285,7 @@ class MultiMarketEvaluator:
             timeframes_tested=[market.timeframe],
         )
 
-    def _calculate_sharpe_ratio(
-        self, returns: pd.Series, risk_free_rate: float = 0.02
-    ) -> float:
+    def _calculate_sharpe_ratio(self, returns: pd.Series, risk_free_rate: float = 0.02) -> float:
         """Calculate annualized Sharpe ratio."""
         if len(returns) < 2 or returns.std() == 0:
             return 0.0
@@ -353,15 +303,11 @@ class MultiMarketEvaluator:
             "very_high": 3.0,
         }.get(market.volatility_regime, 1.0)
 
-        timeframe_multiplier = {"1m": 1.0, "5m": 0.8, "15m": 0.6, "1h": 0.4}.get(
-            market.timeframe, 1.0
-        )
+        timeframe_multiplier = {"1m": 1.0, "5m": 0.8, "15m": 0.6, "1h": 0.4}.get(market.timeframe, 1.0)
 
         return base_slippage * volatility_multiplier * timeframe_multiplier
 
-    def _estimate_execution_delay(
-        self, trades: List[Dict], market: MarketConfig
-    ) -> float:
+    def _estimate_execution_delay(self, trades: List[Dict], market: MarketConfig) -> float:
         """Estimate execution delay in milliseconds."""
         base_delay = 50  # 50ms base
 
@@ -374,9 +320,7 @@ class MultiMarketEvaluator:
 
         return base_delay * volatility_impact
 
-    def _estimate_market_impact(
-        self, trades: List[Dict], df: pd.DataFrame, market: MarketConfig
-    ) -> float:
+    def _estimate_market_impact(self, trades: List[Dict], df: pd.DataFrame, market: MarketConfig) -> float:
         """Estimate market impact of trades."""
         if not trades:
             return 0.0
@@ -387,9 +331,7 @@ class MultiMarketEvaluator:
         volume_ratio = avg_trade_size / avg_volume if avg_volume > 0 else 0
         return min(volume_ratio * 0.1, 0.05)  # Cap at 5% impact
 
-    def _calculate_correlation(
-        self, equity_curve: pd.Series, df: pd.DataFrame
-    ) -> float:
+    def _calculate_correlation(self, equity_curve: pd.Series, df: pd.DataFrame) -> float:
         """Calculate correlation to benchmark (buy-and-hold)."""
         if len(equity_curve) != len(df):
             return 0.0
@@ -403,9 +345,7 @@ class MultiMarketEvaluator:
 
         return strategy_returns.corr(benchmark_returns)
 
-    def _aggregate_market_metrics(
-        self, market_results: List[StrategyMetrics], markets: List[MarketConfig]
-    ) -> StrategyMetrics:
+    def _aggregate_market_metrics(self, market_results: List[StrategyMetrics], markets: List[MarketConfig]) -> StrategyMetrics:
         """Aggregate multi-market results into comprehensive metrics."""
         if not market_results:
             raise ValueError("No valid market results to aggregate")
@@ -418,51 +358,27 @@ class MultiMarketEvaluator:
         weights = [abs(r.total_pnl) + 0.01 for r in market_results]  # Use PnL as weight
         weight_sum = sum(weights)
 
-        weighted_sharpe = (
-            sum(r.sharpe_ratio * w for r, w in zip(market_results, weights))
-            / weight_sum
-        )
-        weighted_winrate = (
-            sum(r.win_rate * w for r, w in zip(market_results, weights)) / weight_sum
-        )
-        weighted_drawdown = (
-            sum(r.max_drawdown * w for r, w in zip(market_results, weights))
-            / weight_sum
-        )
+        weighted_sharpe = sum(r.sharpe_ratio * w for r, w in zip(market_results, weights)) / weight_sum
+        weighted_winrate = sum(r.win_rate * w for r, w in zip(market_results, weights)) / weight_sum
+        weighted_drawdown = sum(r.max_drawdown * w for r, w in zip(market_results, weights)) / weight_sum
 
         # Combine unique markets and timeframes
         all_markets = list(set(sum([r.markets_tested for r in market_results], [])))
-        all_timeframes = list(
-            set(sum([r.timeframes_tested for r in market_results], []))
-        )
+        all_timeframes = list(set(sum([r.timeframes_tested for r in market_results], [])))
 
         # Average execution metrics
-        avg_slippage = sum(r.slippage_impact for r in market_results) / len(
-            market_results
-        )
-        avg_delay = sum(r.execution_delay_ms for r in market_results) / len(
-            market_results
-        )
-        avg_market_impact = sum(r.market_impact for r in market_results) / len(
-            market_results
-        )
+        avg_slippage = sum(r.slippage_impact for r in market_results) / len(market_results)
+        avg_delay = sum(r.execution_delay_ms for r in market_results) / len(market_results)
+        avg_market_impact = sum(r.market_impact for r in market_results) / len(market_results)
 
         # Consistency metrics
-        profit_factor = sum(r.profit_factor for r in market_results) / len(
-            market_results
-        )
+        profit_factor = sum(r.profit_factor for r in market_results) / len(market_results)
         avg_trade = total_pnl / num_trades if num_trades > 0 else 0
 
         # Risk-adjusted metrics
-        correlation_to_benchmark = sum(
-            r.correlation_to_benchmark for r in market_results
-        ) / len(market_results)
-        volatility_adjusted_return = sum(
-            r.volatility_adjusted_return for r in market_results
-        ) / len(market_results)
-        downside_deviation = sum(r.downside_deviation for r in market_results) / len(
-            market_results
-        )
+        correlation_to_benchmark = sum(r.correlation_to_benchmark for r in market_results) / len(market_results)
+        volatility_adjusted_return = sum(r.volatility_adjusted_return for r in market_results) / len(market_results)
+        downside_deviation = sum(r.downside_deviation for r in market_results) / len(market_results)
 
         return StrategyMetrics(
             total_pnl=total_pnl,
@@ -482,9 +398,7 @@ class MultiMarketEvaluator:
             downside_deviation=downside_deviation,
         )
 
-    async def batch_evaluate_population(
-        self, population: List[Tuple[str, str]]
-    ) -> Dict[str, StrategyMetrics]:
+    async def batch_evaluate_population(self, population: List[Tuple[str, str]]) -> Dict[str, StrategyMetrics]:
         """Evaluate entire strategy population concurrently."""
         results = {}
 

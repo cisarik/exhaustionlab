@@ -1,6 +1,6 @@
 /**
  * Multi-Market Testing Module
- * 
+ *
  * Handles:
  * - Market/timeframe configuration
  * - Strategy testing across markets
@@ -17,13 +17,13 @@ let selectedTimeframes = ['5m', '15m', '1h'];
  */
 function initMultiMarketTesting() {
   console.log("Initializing multi-market testing...");
-  
+
   // Load available markets
   loadAvailableMarkets();
-  
+
   // Setup event listeners
   setupMultiMarketListeners();
-  
+
   // Try to load cached results
   loadMultiMarketResults();
 }
@@ -37,42 +37,42 @@ function setupMultiMarketListeners() {
   if (testBtn) {
     testBtn.addEventListener('click', runMultiMarketTest);
   }
-  
+
   // Configure markets button
   const configBtn = document.getElementById('configure-markets');
   if (configBtn) {
     configBtn.addEventListener('click', showMarketConfig);
   }
-  
+
   // Apply config button
   const applyBtn = document.getElementById('apply-config');
   if (applyBtn) {
     applyBtn.addEventListener('click', applyConfigAndTest);
   }
-  
+
   // Cancel config button
   const cancelBtn = document.getElementById('cancel-config');
   if (cancelBtn) {
     cancelBtn.addEventListener('click', hideMarketConfig);
   }
-  
+
   // Search input
   const searchInput = document.getElementById('strategy-search');
   if (searchInput) {
     searchInput.addEventListener('input', filterMultiMarketResults);
   }
-  
+
   // Filter checkboxes
   const approvedFilter = document.getElementById('filter-approved');
   if (approvedFilter) {
     approvedFilter.addEventListener('change', filterMultiMarketResults);
   }
-  
+
   const fitnessFilter = document.getElementById('filter-high-fitness');
   if (fitnessFilter) {
     fitnessFilter.addEventListener('change', filterMultiMarketResults);
   }
-  
+
   // Table sorting
   const sortHeaders = document.querySelectorAll('.multi-market-table th.sortable');
   sortHeaders.forEach(header => {
@@ -90,7 +90,7 @@ async function loadAvailableMarkets() {
   try {
     const response = await fetch('/api/multi-market/available-markets');
     const data = await response.json();
-    
+
     // Populate market selector
     const marketSelector = document.getElementById('market-selector');
     if (marketSelector && data.symbols) {
@@ -101,7 +101,7 @@ async function loadAvailableMarkets() {
         </label>
       `).join('');
     }
-    
+
     // Populate timeframe selector
     const timeframeSelector = document.getElementById('timeframe-selector');
     if (timeframeSelector && data.timeframes) {
@@ -112,7 +112,7 @@ async function loadAvailableMarkets() {
         </label>
       `).join('');
     }
-    
+
   } catch (err) {
     console.error("Failed to load available markets:", err);
   }
@@ -145,25 +145,25 @@ async function applyConfigAndTest() {
   // Get selected markets
   const marketCheckboxes = document.querySelectorAll('#market-selector input[type="checkbox"]:checked');
   selectedMarkets = Array.from(marketCheckboxes).map(cb => cb.value);
-  
+
   // Get selected timeframes
   const tfCheckboxes = document.querySelectorAll('#timeframe-selector input[type="checkbox"]:checked');
   selectedTimeframes = Array.from(tfCheckboxes).map(cb => cb.value);
-  
+
   // Validate
   if (selectedMarkets.length === 0) {
     alert("Please select at least one market");
     return;
   }
-  
+
   if (selectedTimeframes.length === 0) {
     alert("Please select at least one timeframe");
     return;
   }
-  
+
   // Hide config panel
   hideMarketConfig();
-  
+
   // Run test
   await runMultiMarketTest();
 }
@@ -173,14 +173,14 @@ async function applyConfigAndTest() {
  */
 async function runMultiMarketTest() {
   const testBtn = document.getElementById('test-all-markets');
-  
+
   try {
     // Disable button
     if (testBtn) {
       testBtn.disabled = true;
       testBtn.textContent = '⏳ Testing...';
     }
-    
+
     // Show loading in table
     const tbody = document.getElementById('multi-market-tbody');
     if (tbody) {
@@ -194,7 +194,7 @@ async function runMultiMarketTest() {
         </tr>
       `;
     }
-    
+
     // Make API request
     const response = await fetch('/api/multi-market/test', {
       method: 'POST',
@@ -206,13 +206,13 @@ async function runMultiMarketTest() {
         lookback_days: 30
       })
     });
-    
+
     const result = await response.json();
-    
+
     if (result.status === 'completed') {
       multiMarketData = result.results;
       renderMultiMarketTable();
-      
+
       // Show success message
       addFeedMessage(
         `Multi-market testing completed! Tested ${result.total_strategies} strategies across ${result.total_markets} markets.`,
@@ -221,11 +221,11 @@ async function runMultiMarketTest() {
     } else {
       throw new Error(result.message || 'Test failed');
     }
-    
+
   } catch (err) {
     console.error("Multi-market test failed:", err);
     addFeedMessage(`Multi-market test failed: ${err.message}`, 'error');
-    
+
     const tbody = document.getElementById('multi-market-tbody');
     if (tbody) {
       tbody.innerHTML = `
@@ -237,7 +237,7 @@ async function runMultiMarketTest() {
         </tr>
       `;
     }
-    
+
   } finally {
     // Re-enable button
     if (testBtn) {
@@ -254,7 +254,7 @@ async function loadMultiMarketResults() {
   try {
     const response = await fetch('/api/multi-market/results');
     const data = await response.json();
-    
+
     if (data.status === 'completed' && data.results && data.results.length > 0) {
       multiMarketData = data.results;
       renderMultiMarketTable();
@@ -270,13 +270,13 @@ async function loadMultiMarketResults() {
 function renderMultiMarketTable() {
   const tbody = document.getElementById('multi-market-tbody');
   if (!tbody) return;
-  
+
   // Apply filters
   let filteredData = filterData(multiMarketData);
-  
+
   // Apply sorting
   filteredData = sortData(filteredData);
-  
+
   if (filteredData.length === 0) {
     tbody.innerHTML = `
       <tr>
@@ -288,7 +288,7 @@ function renderMultiMarketTable() {
     `;
     return;
   }
-  
+
   // Render rows
   tbody.innerHTML = filteredData.map(strategy => `
     <tr class="result-row ${strategy.status === 'approved' ? 'approved' : 'rejected'}">
@@ -331,23 +331,23 @@ function filterData(data) {
   const searchTerm = document.getElementById('strategy-search')?.value.toLowerCase() || '';
   const approvedOnly = document.getElementById('filter-approved')?.checked || false;
   const highFitnessOnly = document.getElementById('filter-high-fitness')?.checked || false;
-  
+
   return data.filter(strategy => {
     // Search filter
     if (searchTerm && !strategy.strategy_name.toLowerCase().includes(searchTerm) && !strategy.strategy_id.includes(searchTerm)) {
       return false;
     }
-    
+
     // Approved filter
     if (approvedOnly && strategy.status !== 'approved') {
       return false;
     }
-    
+
     // High fitness filter
     if (highFitnessOnly && strategy.avg_fitness < 0.7) {
       return false;
     }
-    
+
     return true;
   });
 }
@@ -357,17 +357,17 @@ function filterData(data) {
  */
 function sortData(data) {
   const { column, direction } = currentSort;
-  
+
   return [...data].sort((a, b) => {
     let aVal = a[column];
     let bVal = b[column];
-    
+
     // Handle string comparisons
     if (typeof aVal === 'string') {
       aVal = aVal.toLowerCase();
       bVal = bVal.toLowerCase();
     }
-    
+
     if (direction === 'asc') {
       return aVal > bVal ? 1 : -1;
     } else {
@@ -387,7 +387,7 @@ function sortMultiMarketTable(column) {
     currentSort.column = column;
     currentSort.direction = 'desc';
   }
-  
+
   // Update header classes
   const headers = document.querySelectorAll('.multi-market-table th.sortable');
   headers.forEach(header => {
@@ -395,7 +395,7 @@ function sortMultiMarketTable(column) {
     const icon = header.querySelector('.sort-icon');
     if (icon) icon.textContent = '↕';
   });
-  
+
   // Mark active column
   const activeHeader = document.querySelector(`.multi-market-table th[data-sort="${column}"]`);
   if (activeHeader) {
@@ -403,7 +403,7 @@ function sortMultiMarketTable(column) {
     const icon = activeHeader.querySelector('.sort-icon');
     if (icon) icon.textContent = currentSort.direction === 'asc' ? '↑' : '↓';
   }
-  
+
   // Re-render table
   renderMultiMarketTable();
 }
@@ -421,13 +421,13 @@ function filterMultiMarketResults() {
 function viewMarketDetails(strategyId) {
   const strategy = multiMarketData.find(s => s.strategy_id === strategyId);
   if (!strategy) return;
-  
+
   // Build detailed view
   const detailsHTML = `
     <div class="market-details-modal">
       <h3>${strategy.strategy_name}</h3>
       <p>Strategy ID: ${strategy.strategy_id}</p>
-      
+
       <div class="summary-metrics">
         <div class="metric">
           <span class="label">Average Fitness</span>
@@ -442,7 +442,7 @@ function viewMarketDetails(strategyId) {
           <span class="value">${strategy.markets_passed}/${strategy.markets_tested}</span>
         </div>
       </div>
-      
+
       <h4>Per-Market Results</h4>
       <table class="market-details-table">
         <thead>
@@ -472,9 +472,9 @@ function viewMarketDetails(strategyId) {
       </table>
     </div>
   `;
-  
+
   // Show in modal (you'll need to add a modal component)
-  alert("Market details view - implement modal here\n\n" + 
+  alert("Market details view - implement modal here\n\n" +
         `Strategy: ${strategy.strategy_name}\n` +
         `Pass Rate: ${(strategy.pass_rate * 100).toFixed(1)}%\n` +
         `Markets Passed: ${strategy.markets_passed}/${strategy.markets_tested}`);

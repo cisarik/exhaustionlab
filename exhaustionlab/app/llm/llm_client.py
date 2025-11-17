@@ -10,16 +10,16 @@ from __future__ import annotations
 import json
 import logging
 import os
-import time
 import re
-from typing import Dict, List, Optional, Any, Union
-import requests
-from pathlib import Path
+import time
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
-from .prompts import PromptEngine, PromptContext
-from .validators import PyneCoreValidator
+import requests
+
 from .hallucination_detector import HallucinationDetector
+from .prompts import PromptContext, PromptEngine
+from .validators import PyneCoreValidator
 
 
 @dataclass
@@ -87,9 +87,7 @@ class LocalLLMClient:
             self.offline_mode = not healthy
             return True
         except Exception as e:
-            self.logger.warning(
-                f"LLM connection unavailable ({e}); enabling offline mode"
-            )
+            self.logger.warning(f"LLM connection unavailable ({e}); enabling offline mode")
             self.offline_mode = True
             return True
 
@@ -147,9 +145,7 @@ class LocalLLMClient:
             if "Description:" in line or "Popis:" in line:
                 metadata["description"] = line.split(":", 1)[1].strip()
             elif "Indicators:" in line or "Indikátory:" in line:
-                metadata["indicators_used"] = [
-                    i.strip() for i in line.split(":")[1].split(",")
-                ]
+                metadata["indicators_used"] = [i.strip() for i in line.split(":")[1].split(",")]
             elif "Risk Level:" in line:
                 # Extract risk level
                 risk = line.split(":")[1].strip().lower()
@@ -186,15 +182,8 @@ class LocalLLMClient:
                 payload["max_tokens"] = request.max_tokens
 
             # Choose endpoint based on model capabilities
-            supports_chat = any(
-                marker in self.model_name.lower()
-                for marker in ["deepseek", "gpt", "chat", "gemma", "mistral"]
-            )
-            endpoint = (
-                f"{self.base_url}/v1/chat/completions"
-                if supports_chat
-                else f"{self.base_url}/v1/responses"
-            )
+            supports_chat = any(marker in self.model_name.lower() for marker in ["deepseek", "gpt", "chat", "gemma", "mistral"])
+            endpoint = f"{self.base_url}/v1/chat/completions" if supports_chat else f"{self.base_url}/v1/responses"
 
             # Make API call
             response = self.session.post(
@@ -222,36 +211,20 @@ class LocalLLMClient:
 
             if code_blocks:
                 # Step 1: Check for hallucinations first
-                is_hallucination_free, hallucination_issues = (
-                    self.hallucination_detector.validate_code(code_blocks[0])
-                )
+                is_hallucination_free, hallucination_issues = self.hallucination_detector.validate_code(code_blocks[0])
 
                 if not is_hallucination_free:
                     # Log hallucination issues
-                    self.logger.warning(
-                        f"Hallucinations detected: {len(hallucination_issues)} issues"
-                    )
-                    self.logger.debug(
-                        self.hallucination_detector.format_report(hallucination_issues)
-                    )
+                    self.logger.warning(f"Hallucinations detected: {len(hallucination_issues)} issues")
+                    self.logger.debug(self.hallucination_detector.format_report(hallucination_issues))
                     success = False
-                    error_messages = [
-                        issue.description
-                        for issue in hallucination_issues
-                        if issue.severity == "error"
-                    ]
-                    error_message = (
-                        f"API Hallucinations: {'; '.join(error_messages[:3])}"
-                    )
+                    error_messages = [issue.description for issue in hallucination_issues if issue.severity == "error"]
+                    error_message = f"API Hallucinations: {'; '.join(error_messages[:3])}"
                 else:
                     # Step 2: If no hallucinations, validate syntax/structure
-                    validation_result = self.validator.validate_pyne_code(
-                        code_blocks[0]
-                    )
+                    validation_result = self.validator.validate_pyne_code(code_blocks[0])
                     success = validation_result.is_valid
-                    error_message = (
-                        validation_result.error_message if not success else None
-                    )
+                    error_message = validation_result.error_message if not success else None
 
             # Calculate stats
             request_time = time.time() - start_time
@@ -300,9 +273,7 @@ class LocalLLMClient:
                 error_message=str(e),
             )
 
-    def generate_with_retry(
-        self, request: LLMRequest, max_retries: int = 3
-    ) -> LLMResponse:
+    def generate_with_retry(self, request: LLMRequest, max_retries: int = 3) -> LLMResponse:
         """Generate with automatic retry for failed attempts."""
         for attempt in range(max_retries):
             response = self.generate(request)
@@ -311,9 +282,7 @@ class LocalLLMClient:
                 return response
 
             # If failed, modify request and retry
-            self.logger.warning(
-                f"ATTEMPT {attempt + 1}/{max_retries}: {response.error_message}"
-            )
+            self.logger.warning(f"ATTEMPT {attempt + 1}/{max_retries}: {response.error_message}")
 
             if attempt < max_retries - 1:
                 # Reduce temperature for more deterministic output
@@ -328,18 +297,12 @@ class LocalLLMClient:
         """Update rolling average response time."""
         alpha = 0.1  # Learning rate for rolling average
         current_avg = self.generation_stats["avg_response_time"]
-        self.generation_stats["avg_response_time"] = (
-            alpha * new_time + (1 - alpha) * current_avg
-        )
+        self.generation_stats["avg_response_time"] = alpha * new_time + (1 - alpha) * current_avg
 
     def get_stats(self) -> Dict[str, Any]:
         """Get client statistics."""
         total = self.generation_stats["total_requests"]
-        success_rate = (
-            self.generation_stats["successful_generations"] / total
-            if total > 0
-            else 0.0
-        )
+        success_rate = self.generation_stats["successful_generations"] / total if total > 0 else 0.0
 
         return {**self.generation_stats, "success_rate": success_rate}
 

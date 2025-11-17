@@ -5,13 +5,14 @@ Extracts public trading strategies from TradingView.
 Note: This scrapes public content only - respects TradingView's terms of service.
 """
 
+import logging
+import random
+import re
+import time
+from typing import Any, Dict, List, Optional
+
 import requests
 from bs4 import BeautifulSoup
-import time
-import random
-from typing import List, Dict, Optional, Any
-import logging
-import re
 
 logger = logging.getLogger(__name__)
 

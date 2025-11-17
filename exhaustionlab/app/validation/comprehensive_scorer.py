@@ -16,12 +16,9 @@ import logging
 from dataclasses import dataclass
 from typing import Dict, Optional
 
-import pandas as pd
-import numpy as np
-
 from .backtest_parser import BacktestResult
-from .slippage_model import SlippageEstimator
 from .execution_quality import ExecutionQualityAnalyzer
+from .slippage_model import SlippageEstimator
 
 logger = logging.getLogger(__name__)
 
@@ -150,32 +147,18 @@ class ComprehensiveScorer:
         perf_scores = self._score_performance(backtest)
         risk_scores = self._score_risk(backtest)
         exec_scores = self._score_execution(backtest, symbol, portfolio_size_usd)
-        robust_scores = self._score_robustness(
-            out_of_sample_ratio, cross_market_pass_rate
-        )
+        robust_scores = self._score_robustness(out_of_sample_ratio, cross_market_pass_rate)
 
         # Calculate totals
-        performance_total = (
-            perf_scores["sharpe"] + perf_scores["return"] + perf_scores["win_rate"]
-        )
+        performance_total = perf_scores["sharpe"] + perf_scores["return"] + perf_scores["win_rate"]
 
-        risk_total = (
-            risk_scores["drawdown"]
-            + risk_scores["consistency"]
-            + risk_scores["recovery"]
-        )
+        risk_total = risk_scores["drawdown"] + risk_scores["consistency"] + risk_scores["recovery"]
 
-        execution_total = (
-            exec_scores["frequency"] + exec_scores["latency"] + exec_scores["slippage"]
-        )
+        execution_total = exec_scores["frequency"] + exec_scores["latency"] + exec_scores["slippage"]
 
-        robustness_total = (
-            robust_scores["out_of_sample"] + robust_scores["cross_market"]
-        )
+        robustness_total = robust_scores["out_of_sample"] + robust_scores["cross_market"]
 
-        total_score = (
-            performance_total + risk_total + execution_total + robustness_total
-        )
+        total_score = performance_total + risk_total + execution_total + robustness_total
 
         return ComponentScores(
             sharpe_score=perf_scores["sharpe"],
@@ -225,9 +208,7 @@ class ComprehensiveScorer:
             return_score = 10.0
         elif annual_return >= 0.15:  # 15%
             # Linear interpolation between 15% and 30%
-            return_score = (
-                5.0 + ((annual_return - 0.15) / (self.RETURN_TARGET - 0.15)) * 5.0
-            )
+            return_score = 5.0 + ((annual_return - 0.15) / (self.RETURN_TARGET - 0.15)) * 5.0
         elif annual_return > 0:
             return_score = (annual_return / 0.15) * 5.0
         else:
@@ -239,9 +220,7 @@ class ComprehensiveScorer:
             win_rate_score = 10.0
         elif win_rate >= 0.45:  # 45%
             # Linear interpolation between 45% and 55%
-            win_rate_score = (
-                5.0 + ((win_rate - 0.45) / (self.WIN_RATE_TARGET - 0.45)) * 5.0
-            )
+            win_rate_score = 5.0 + ((win_rate - 0.45) / (self.WIN_RATE_TARGET - 0.45)) * 5.0
         elif win_rate > 0:
             win_rate_score = (win_rate / 0.45) * 5.0
         else:
@@ -268,15 +247,9 @@ class ComprehensiveScorer:
             drawdown_score = 15.0
         elif drawdown <= self.DRAWDOWN_TARGET:  # < 25%
             # Linear interpolation between 15% and 25%
-            drawdown_score = (
-                10.0
-                + ((self.DRAWDOWN_TARGET - drawdown) / (self.DRAWDOWN_TARGET - 0.15))
-                * 5.0
-            )
+            drawdown_score = 10.0 + ((self.DRAWDOWN_TARGET - drawdown) / (self.DRAWDOWN_TARGET - 0.15)) * 5.0
         elif drawdown <= 0.40:  # < 40%
-            drawdown_score = (
-                5.0 + ((0.40 - drawdown) / (0.40 - self.DRAWDOWN_TARGET)) * 5.0
-            )
+            drawdown_score = 5.0 + ((0.40 - drawdown) / (0.40 - self.DRAWDOWN_TARGET)) * 5.0
         elif drawdown < 0.50:  # < 50%
             drawdown_score = ((0.50 - drawdown) / 0.10) * 5.0
         else:
@@ -292,11 +265,7 @@ class ComprehensiveScorer:
                 if positive_months >= self.CONSISTENCY_TARGET:
                     consistency_score = 10.0
                 elif positive_months >= 0.50:
-                    consistency_score = (
-                        5.0
-                        + ((positive_months - 0.50) / (self.CONSISTENCY_TARGET - 0.50))
-                        * 5.0
-                    )
+                    consistency_score = 5.0 + ((positive_months - 0.50) / (self.CONSISTENCY_TARGET - 0.50)) * 5.0
                 else:
                     consistency_score = (positive_months / 0.50) * 5.0
             else:
@@ -313,9 +282,7 @@ class ComprehensiveScorer:
         if recovery_days <= self.RECOVERY_TARGET_DAYS:
             recovery_score = 5.0
         elif recovery_days <= 60:
-            recovery_score = (
-                3.0 + ((60 - recovery_days) / (60 - self.RECOVERY_TARGET_DAYS)) * 2.0
-            )
+            recovery_score = 3.0 + ((60 - recovery_days) / (60 - self.RECOVERY_TARGET_DAYS)) * 2.0
         elif recovery_days <= 90:
             recovery_score = 1.0 + ((90 - recovery_days) / 30) * 2.0
         elif recovery_days <= 120:
@@ -420,6 +387,7 @@ class ComprehensiveScorer:
             "frequency": frequency_score,
             "latency": latency_score,
             "slippage": slippage_score,
+            "required_latency_ms": required_latency_ms,
         }
 
     def _score_robustness(
@@ -455,13 +423,9 @@ class ComprehensiveScorer:
             if cross_market_pass_rate >= 0.75:  # 75%+ pass rate
                 cross_market_score = 8.0
             elif cross_market_pass_rate >= 0.60:
-                cross_market_score = (
-                    6.0 + ((cross_market_pass_rate - 0.60) / 0.15) * 2.0
-                )
+                cross_market_score = 6.0 + ((cross_market_pass_rate - 0.60) / 0.15) * 2.0
             elif cross_market_pass_rate >= 0.50:
-                cross_market_score = (
-                    4.0 + ((cross_market_pass_rate - 0.50) / 0.10) * 2.0
-                )
+                cross_market_score = 4.0 + ((cross_market_pass_rate - 0.50) / 0.10) * 2.0
             elif cross_market_pass_rate > 0:
                 cross_market_score = (cross_market_pass_rate / 0.50) * 4.0
             else:

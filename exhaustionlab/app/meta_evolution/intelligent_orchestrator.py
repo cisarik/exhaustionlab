@@ -7,20 +7,13 @@ example learning, and intelligent prompt engineering.
 
 from __future__ import annotations
 
-import json
 import logging
-from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple
 
-from .meta_config import (
-    MetaEvolutionConfig,
-    MetaParameters,
-    MetaStrategyType,
-    MarketFocus,
-    EvolutionIntensity,
-)
-from ..llm import LocalLLMClient, LLMStrategyGenerator, PromptContext, LLMRequest
 from ..backtest.strategy_genome import StrategyGenome
+from ..llm import LLMRequest, LLMStrategyGenerator, LocalLLMClient
+from .meta_config import EvolutionIntensity, MarketFocus, MetaEvolutionConfig, MetaParameters, MetaStrategyType
 
 
 @dataclass
@@ -80,9 +73,7 @@ class IntelligentOrchestrator:
         task_specification = self._build_task_specification(directive, context)
         context_knowledge = self._build_context_knowledge(context, directive)
         examples_with_weights = self._prepare_weighted_examples(context, meta_params)
-        validation_requirements = self._build_validation_requirements(
-            directive, meta_params
-        )
+        validation_requirements = self._build_validation_requirements(directive, meta_params)
         creative_constraints = self._build_creative_constraints(directive, meta_params)
         meta_guidance = self._build_meta_guidance(performance_feedback)
 
@@ -101,7 +92,7 @@ class IntelligentOrchestrator:
 ## VALIDATION REQUIREMENTS
 {self._format_requirements(validation_requirements)}
 
-## CREATIVE CONSTRAINTS  
+## CREATIVE CONSTRAINTS
 {self._format_constraints(creative_constraints)}
 
 ## META-GUIDANCE
@@ -115,16 +106,12 @@ Generate a complete, production-ready PyneCore strategy that meets all specified
         return LLMRequest(
             prompt=prompt_text,
             system_prompt=system_prompt,
-            temperature=self._determine_temperature(
-                meta_params, directive.evolution_phase
-            ),
+            temperature=self._determine_temperature(meta_params, directive.evolution_phase),
             max_tokens=2000,
             context=context.get_prompt_context(),
         )
 
-    def _build_system_directive(
-        self, directive: EvolutionDirective, meta_params: MetaParameters
-    ) -> str:
+    def _build_system_directive(self, directive: EvolutionDirective, meta_params: MetaParameters) -> str:
         """Build high-level system directive."""
 
         directive_map = {
@@ -133,9 +120,7 @@ Generate a complete, production-ready PyneCore strategy that meets all specified
             "production": "Create institutional-grade strategies with extreme robustness and performance",
         }
 
-        phase_directive = directive_map.get(
-            directive.evolution_phase, directive_map["exploration"]
-        )
+        phase_directive = directive_map.get(directive.evolution_phase, directive_map["exploration"])
 
         return f"""
 You are an elite quantitative strategist specializing in {directive.strategy_type.value} trading systems for {directive.market_focus.value} markets.
@@ -158,9 +143,7 @@ You are an elite quantitative strategist specializing in {directive.strategy_typ
 Your expertise lies in creating strategies that can consistently generate profits while maintaining strict risk management. Every strategy you generate must be production-ready and capable of live deployment.
 """
 
-    def _build_task_specification(
-        self, directive: EvolutionDirective, context: Dict
-    ) -> str:
+    def _build_task_specification(self, directive: EvolutionDirective, context: Dict) -> str:
         """Build detailed task specification."""
 
         strategy_info = context.get("strategy_specification", {})
@@ -170,7 +153,7 @@ Your expertise lies in creating strategies that can consistently generate profit
 ## TASK: CREATE EXPERT TRADING STRATEGY
 
 ### STRATEGY SPECIFICATIONS
-- **Type**: {strategy_info.get('type', 'hybrid')}  
+- **Type**: {strategy_info.get('type', 'hybrid')}
 - **Focus**: {strategy_info.get('focus', 'spot_crypto')}
 - **Core Logic**: {strategy_info.get('description', 'Adaptive trading logic')}
 - **Signal Patterns**: {', '.join(strategy_info.get('signal_patterns', 'various patterns'))}
@@ -181,7 +164,7 @@ Your expertise lies in creating strategies that can consistently generate profit
 - **Risk Profile**: {strategy_info.get('risk_profile', 'balanced')}
 - **Market Conditions**: {strategy_info.get('market_conditions', 'various')}
 
-### PERFORMANCE CONSTRAINTS  
+### PERFORMANCE CONSTRAINTS
 - **Max Drawdown**: {constraints.get('max_drawdown_target', 0.20):.1%}
 - **Min Win Rate**: {constraints.get('min_win_rate_target', 0.50):.1%}
 - **Target Sharpe**: {constraints.get('expected_sharpe_target', 1.0)}
@@ -189,7 +172,7 @@ Your expertise lies in creating strategies that can consistently generate profit
 
 ### CODE STRUCTURE REQUIREMENTS
 1. Use @pyne decorator and proper PyneCore imports
-2. All inputs defined with input() functions with appropriate ranges  
+2. All inputs defined with input() functions with appropriate ranges
 3. Multi-level signal system (L1=weak, L2=medium, L3=strong)
 4. Comprehensive edge case handling
 5. Clean, readable code with strategic comments
@@ -199,16 +182,14 @@ Your expertise lies in creating strategies that can consistently generate profit
 Push boundaries within constraints. Consider:
 - Novel indicator combinations
 - Innovative signal filtering approaches
-- Adaptive mechanisms for market conditions  
+- Adaptive mechanisms for market conditions
 - Robust risk management techniques
 - Execution efficiency optimizations
 
 Create a strategy that quant hedge funds would be proud to deploy in their production trading systems.
 """
 
-    def _build_context_knowledge(
-        self, context: Dict, directive: EvolutionDirective
-    ) -> str:
+    def _build_context_knowledge(self, context: Dict, directive: EvolutionDirective) -> str:
         """Build deep domain knowledge context."""
 
         strategy_info = context.get("strategy_specification", {})
@@ -222,7 +203,7 @@ Expert understanding of {strategy_info.get('description', 'strategy domain')} wi
 ### ADVANCED TECHNICAL ANALYSIS
 Mastery of technical indicators and their limitations in crypto environments:
 - **Volume Dynamics**: Critical in 24/7 crypto markets with manipulation susceptibility
-- **Volatility Management**: Essential for risk control in high-volatility assets  
+- **Volatility Management**: Essential for risk control in high-volatility assets
 - **Timeframe Synergy**: Multi-timeframe analysis for signal confirmation
 - **Market Microstructure**: Understanding of order flow and liquidity dynamics
 
@@ -243,7 +224,7 @@ Deep understanding of modern quantitative methods:
 ### INSTITUTIONAL TRADING STANDARDS
 Production-grade code quality and operational excellence:
 - **Execution Optimization**: Minimizing slippage and transaction costs
-- **Error Handling**: Graceful degradation under extreme market conditions  
+- **Error Handling**: Graceful degradation under extreme market conditions
 - **Scalability**: Performance with increasing computational requirements
 - **Monitoring**: Comprehensive logging and performance tracking
 
@@ -257,9 +238,7 @@ Specialized knowledge for cryptocurrency trading:
 Apply this comprehensive expertise to create a truly exceptional trading strategy.
 """
 
-    def _prepare_weighted_examples(
-        self, context: Dict, meta_params: MetaParameters
-    ) -> List[Tuple[str, float]]:
+    def _prepare_weighted_examples(self, context: Dict, meta_params: MetaParameters) -> List[Tuple[str, float]]:
         """Prepare weighted examples based on performance and relevance."""
 
         examples = context.get("examples", [])
@@ -320,9 +299,7 @@ Apply this comprehensive expertise to create a truly exceptional trading strateg
 
         return weighted_examples[:max_examples]
 
-    def _build_validation_requirements(
-        self, directive: EvolutionDirective, meta_params: MetaParameters
-    ) -> List[str]:
+    def _build_validation_requirements(self, directive: EvolutionDirective, meta_params: MetaParameters) -> List[str]:
         """Build validation requirements based on production standards."""
 
         requirements = [
@@ -361,9 +338,7 @@ Apply this comprehensive expertise to create a truly exceptional trading strateg
 
         return requirements
 
-    def _build_creative_constraints(
-        self, directive: EvolutionDirective, meta_params: MetaParameters
-    ) -> List[str]:
+    def _build_creative_constraints(self, directive: EvolutionDirective, meta_params: MetaParameters) -> List[str]:
         """Build creative constraints to guide LLM innovation."""
 
         base_constraints = [
@@ -419,7 +394,7 @@ Apply this comprehensive expertise to create a truly exceptional trading strateg
 ### DESIGN PHILOSOPHY
 Create strategies that are both innovative and practical. Balance:
 - **Cutting-edge innovation** with proven quantitative principles
-- **Mathematical elegance** with practical code maintainability  
+- **Mathematical elegance** with practical code maintainability
 - **Performance optimization** with robust risk management
 - **Sophistication** with operational simplicity
 
@@ -433,7 +408,7 @@ Target strategies that elite quant funds would deploy:
 ### INNOVATION MANDATE
 Push beyond standard retail trading strategies:
 - **Multi-signal integration**: Combine complementary approaches intelligently
-- **Adaptive mechanisms**: Adjust to changing market conditions automatically  
+- **Adaptive mechanisms**: Adjust to changing market conditions automatically
 - **Microstructure awareness**: Understand and exploit order flow dynamics
 - **Cross-asset insights**: Incorporate relationships between correlated assets
 
@@ -451,7 +426,7 @@ Recent performance provides these insights:
 - **Realized Drawdown**: {performance_feedback.get('max_drawdown', 'N/A')}
 - **Win Rate Achievement**: {performance_feedback.get('win_rate', 'N/A')}
 
-**Adaptive Guidance**: 
+**Adaptive Guidance**:
 Based on this performance, {
 self._generate_adaptive_guidance(performance_feedback)
 }
@@ -474,29 +449,21 @@ self._generate_adaptive_guidance(performance_feedback)
             guidance_parts.append("increase signal quality and reduce noise trading")
 
         if drawdown > 0.2:
-            guidance_parts.append(
-                "implement stronger risk management and position sizing"
-            )
+            guidance_parts.append("implement stronger risk management and position sizing")
 
         if win_rate < 0.4:
             guidance_parts.append("improve signal confirmation and edge detection")
 
         if sharpe > 1.5 and drawdown < 0.08:
-            guidance_parts.append(
-                "consider scaling up position sizes while monitoring capacity"
-            )
-            guidance_parts.append(
-                "focus on execution optimization and speed improvements"
-            )
+            guidance_parts.append("consider scaling up position sizes while monitoring capacity")
+            guidance_parts.append("focus on execution optimization and speed improvements")
 
         if not guidance_parts:
             return "current approach is strong - continue with similar quality improvements"
 
         return f"{'; '.join(guidance_parts)}. Also consider diversifying signal approaches to improve stability."
 
-    def _determine_temperature(
-        self, meta_params: MetaParameters, evolution_phase: str
-    ) -> float:
+    def _determine_temperature(self, meta_params: MetaParameters, evolution_phase: str) -> float:
         """Determine LLM temperature based on evolution phase and intensity."""
 
         base_temps = {
@@ -541,7 +508,7 @@ VALIDATION STANDARDS:
 EXPERTISE DELIVERY:
 Demonstrate deep understanding of:
 - Technical analysis mathematics and statistical significance
-- Market microstructure and execution optimization  
+- Market microstructure and execution optimization
 - Risk management and position sizing algorithms
 - Multi-timeframe signal correlation and confirmation
 - Behavioral finance patterns in cryptocurrency markets
@@ -574,9 +541,7 @@ Generate strategies that elite hedge funds would be proud to add to their tradin
         """Format constraints list."""
         return "- " + "\n- ".join(constraints)
 
-    def generate_intelligent_strategy(
-        self, strategy_directive: EvolutionDirective
-    ) -> StrategyGenome:
+    def generate_intelligent_strategy(self, strategy_directive: EvolutionDirective) -> StrategyGenome:
         """Generate strategy using intelligent orchestration."""
 
         # Determine evolution approach
@@ -648,7 +613,5 @@ Generate strategies that elite hedge funds would be proud to add to their tradin
 
                 return genome
 
-        self.logger.error(
-            f"Intelligent strategy generation failed: {result.error_message}"
-        )
+        self.logger.error(f"Intelligent strategy generation failed: {result.error_message}")
         return None

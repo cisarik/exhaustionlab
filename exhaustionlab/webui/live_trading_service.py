@@ -4,10 +4,10 @@ Live Trading Service - Manages real-time strategy deployment and execution.
 
 import asyncio
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
 from uuid import uuid4
 
 logger = logging.getLogger(__name__)
@@ -72,14 +72,10 @@ class Position:
         self.current_price = current_price
         if self.side == PositionSide.LONG:
             self.unrealized_pnl = (current_price - self.entry_price) * self.quantity
-            self.unrealized_pnl_pct = (
-                current_price - self.entry_price
-            ) / self.entry_price
+            self.unrealized_pnl_pct = (current_price - self.entry_price) / self.entry_price
         else:  # SHORT
             self.unrealized_pnl = (self.entry_price - current_price) * self.quantity
-            self.unrealized_pnl_pct = (
-                self.entry_price - current_price
-            ) / self.entry_price
+            self.unrealized_pnl_pct = (self.entry_price - current_price) / self.entry_price
 
 
 @dataclass
@@ -224,9 +220,7 @@ class LiveTradingService:
         task = asyncio.create_task(self._trading_loop(deployment_id))
         self.running_tasks[deployment_id] = task
 
-        logger.info(
-            f"Deployed strategy {strategy_name} (ID: {deployment_id}) in {mode} mode"
-        )
+        logger.info(f"Deployed strategy {strategy_name} (ID: {deployment_id}) in {mode} mode")
         return deployment_id
 
     async def stop_deployment(self, deployment_id: str, reason: str = "user_requested"):
@@ -281,7 +275,6 @@ class LiveTradingService:
 
     async def _trading_loop(self, deployment_id: str):
         """Main trading loop for a deployment"""
-        config = self.deployments[deployment_id]
         status = self.deployment_status[deployment_id]
 
         logger.info(f"Starting trading loop for {deployment_id}")
@@ -289,9 +282,7 @@ class LiveTradingService:
         try:
             while True:
                 # Update uptime
-                status.uptime_seconds = (
-                    datetime.now() - status.start_time
-                ).total_seconds()
+                status.uptime_seconds = (datetime.now() - status.start_time).total_seconds()
 
                 # Check risk limits
                 if not self._check_risk_limits(deployment_id):
@@ -362,22 +353,16 @@ class LiveTradingService:
             # Check stop loss
             if config.risk_params.enable_stop_loss and pos.stop_loss:
                 if pos.current_price <= pos.stop_loss:
-                    await self._close_position(
-                        deployment_id, pos.position_id, reason="stop_loss"
-                    )
+                    await self._close_position(deployment_id, pos.position_id, reason="stop_loss")
                     continue
 
             # Check take profit
             if config.risk_params.enable_take_profit and pos.take_profit:
                 if pos.current_price >= pos.take_profit:
-                    await self._close_position(
-                        deployment_id, pos.position_id, reason="take_profit"
-                    )
+                    await self._close_position(deployment_id, pos.position_id, reason="take_profit")
                     continue
 
-    async def _close_position(
-        self, deployment_id: str, position_id: str, reason: str = "signal"
-    ):
+    async def _close_position(self, deployment_id: str, position_id: str, reason: str = "signal"):
         """Close a position and record the trade"""
         positions = self.positions.get(deployment_id, [])
         position = next((p for p in positions if p.position_id == position_id), None)
@@ -421,15 +406,9 @@ class LiveTradingService:
         else:
             status.losing_trades += 1
 
-        status.win_rate = (
-            status.winning_trades / status.total_trades
-            if status.total_trades > 0
-            else 0.0
-        )
+        status.win_rate = status.winning_trades / status.total_trades if status.total_trades > 0 else 0.0
 
-        logger.info(
-            f"Closed position {position_id}: {trade.pnl:.2f} ({trade.pnl_pct:.2%}) - {reason}"
-        )
+        logger.info(f"Closed position {position_id}: {trade.pnl:.2f} ({trade.pnl_pct:.2%}) - {reason}")
 
 
 # Global instance
